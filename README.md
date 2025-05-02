@@ -1,6 +1,6 @@
 # vrchat-heartio
 
-Listen to your heart rate and display it in VRChat.
+Monitor your heart rate and display it in VRChat.
 
 > NOTE
 
