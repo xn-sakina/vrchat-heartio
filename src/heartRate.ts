@@ -18,7 +18,7 @@ const HEART_LEVEL_LABEL: Record<EHeartLevel, string> = {
   [EHeartLevel.normal]: '♡ {{bpm}}',
   [EHeartLevel.high]: '❤️ {{bpm}}',
   [EHeartLevel.super_high]: '💕 {{bpm}} 💕',
-  [EHeartLevel.full]: '♥💕 {{bpm}} 💕♥',
+  [EHeartLevel.full]: '❤️💕 {{bpm}} 💕❤️',
 } as const
 
 const HEART_RATE_SERVICE_UUID = '180d'
@@ -87,11 +87,11 @@ export class HeartRate {
       return
     }
     let placeholder: string
-    if (bpm < 60) {
+    if (bpm < 70) {
       placeholder = HEART_LEVEL_LABEL[EHeartLevel.normal]
-    } else if (bpm < 70) {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.high]
     } else if (bpm < 80) {
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.high]
+    } else if (bpm < 90) {
       placeholder = HEART_LEVEL_LABEL[EHeartLevel.super_high]
     } else {
       placeholder = HEART_LEVEL_LABEL[EHeartLevel.full]
