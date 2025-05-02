@@ -1,23 +1,34 @@
 # vrchat-heartio
 
-### Install
+Listen to your heart rate and display it in VRChat.
+
+> NOTE
+
+> [!IMPORTANT]
+> You should use bluetooth heart rate devices like `Polar`, `CooSpo`, or `Garmin`, which can get data directly without a server.
+
+### Usage
+
+1. install deps:
 
 ```bash
   pnpm i
 ```
 
-### Config
+2. create · config file
 
 ```ini
-# Create an `.env` file
-
 OSC_PORT=9000
 OSC_HOST=0.0.0.0
 HEART_RATE_DEVICE_NAME="XXXXXX"
 ```
 
-### Start
+3. run
 
 ```bash
   pnpm start
 ```
+
+# License
+
+MIT
