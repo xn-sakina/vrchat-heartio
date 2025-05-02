@@ -8,7 +8,7 @@
 
 ### Config
 
-```
+```ini
 # Create an `.env` file
 
 OSC_PORT=9000
