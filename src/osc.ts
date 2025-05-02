@@ -38,7 +38,7 @@ export const sendOscMessage = async (text: string) => {
     )
     return
   }
-  const { resolve } = Promise.withResolvers<void>()
+  const { resolve, promise } = Promise.withResolvers<void>()
   // send
   client.send(
     MESSAGE_PATH,
@@ -54,4 +54,5 @@ export const sendOscMessage = async (text: string) => {
       resolve()
     },
   )
+  return promise
 }
