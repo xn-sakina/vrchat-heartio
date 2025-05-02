@@ -2,8 +2,6 @@
 
 Monitor your heart rate and display it in VRChat.
 
-> NOTE
-
 > [!IMPORTANT]
 > You should use bluetooth heart rate devices like `Polar`, `CooSpo`, or `Garmin`, which can get data directly without a server.
 
