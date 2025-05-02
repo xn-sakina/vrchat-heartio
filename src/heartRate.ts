@@ -6,6 +6,7 @@ import fs from 'fs'
 import dayjs from 'dayjs'
 import Database, { type Database as DatabaseIns } from 'better-sqlite3'
 import { createLogger } from './utils'
+import { spawn } from 'child_process'
 
 enum EHeartLevel {
   normal = 'normal',
@@ -91,7 +92,7 @@ export class HeartRate {
       placeholder = HEART_LEVEL_LABEL[EHeartLevel.normal]
     } else if (bpm < 80) {
       placeholder = HEART_LEVEL_LABEL[EHeartLevel.high]
-    } else if (bpm < 90) {
+    } else if (bpm < 100) {
       placeholder = HEART_LEVEL_LABEL[EHeartLevel.super_high]
     } else {
       placeholder = HEART_LEVEL_LABEL[EHeartLevel.full]
@@ -308,6 +309,28 @@ export class HeartRate {
     })
   }
 
+  private async keepSystemAwake() {
+    const isMacOs = process.platform === 'darwin'
+    if (!isMacOs) {
+      return
+    }
+    // run caffeinate command
+    const caffeinate = spawn('caffeinate', ['-d'])
+
+    logger.info('Caffeinate started')
+
+    const killCaffeinate = () => {
+      caffeinate.kill()
+      logger.info('Caffeinate killed')
+    }
+    process.on('SIGINT', () => {
+      killCaffeinate()
+    })
+    process.on('SIGTERM', () => {
+      killCaffeinate()
+    })
+  }
+
   async start() {
     // listen for exit signal
     await this.listenExitSignal()
@@ -320,5 +343,8 @@ export class HeartRate {
 
     // start heart rate
     await this.startListenHeartRate()
+
+    // keep system awake
+    await this.keepSystemAwake()
   }
 }
