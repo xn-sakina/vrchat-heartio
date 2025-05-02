@@ -5,38 +5,26 @@ import path from 'path'
 import fs from 'fs'
 import dayjs from 'dayjs'
 import Database, { type Database as DatabaseIns } from 'better-sqlite3'
-import { createConsola } from 'consola'
-
-const HEART_MARK = {
-  normal: '♡',
-  high: '♥',
-} as const
+import { createLogger } from './utils'
 
 enum EHeartLevel {
-  normal = 'normal', // ♡
-  high = 'high', // ♥
-  super_high = 'super_high', // ♥♥
-  full = 'full', // ♥♥♥
+  normal = 'normal',
+  high = 'high',
+  super_high = 'super_high',
+  full = 'full',
 }
 
 const HEART_LEVEL_LABEL: Record<EHeartLevel, string> = {
-  [EHeartLevel.normal]: `${HEART_MARK.normal}`,
-  [EHeartLevel.high]: `${HEART_MARK.high}`,
-  [EHeartLevel.super_high]: HEART_MARK.high.repeat(2),
-  [EHeartLevel.full]: HEART_MARK.high.repeat(3),
+  [EHeartLevel.normal]: '♡ {{bpm}}',
+  [EHeartLevel.high]: '❤️ {{bpm}}',
+  [EHeartLevel.super_high]: '💕 {{bpm}} 💕',
+  [EHeartLevel.full]: '♥💕 {{bpm}} 💕♥',
 } as const
 
 const HEART_RATE_SERVICE_UUID = '180d'
 const HEART_RATE_MEASUREMENT_CHAR_UUID = '2a37'
 
-const logger = createConsola({
-  defaults: {
-    tag: 'HeartRate',
-  },
-  formatOptions: {
-    date: true,
-  },
-})
+const logger = createLogger('HeartRate')
 
 const CACHE_DIR = path.join(__dirname, '../cache')
 if (!fs.existsSync(CACHE_DIR)) {
@@ -98,17 +86,17 @@ export class HeartRate {
       logger.error('Invalid heart rate value:', bpm)
       return
     }
-    let prevMark: string
+    let placeholder: string
     if (bpm < 60) {
-      prevMark = HEART_LEVEL_LABEL[EHeartLevel.normal]
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.normal]
     } else if (bpm < 70) {
-      prevMark = HEART_LEVEL_LABEL[EHeartLevel.high]
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.high]
     } else if (bpm < 80) {
-      prevMark = HEART_LEVEL_LABEL[EHeartLevel.super_high]
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.super_high]
     } else {
-      prevMark = HEART_LEVEL_LABEL[EHeartLevel.full]
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.full]
     }
-    const text = `${prevMark} ${bpm}`
+    const text = placeholder.replace('{{bpm}}', bpm.toString())
     return text
   }
 

@@ -1,16 +1,9 @@
 import { Client } from 'node-osc'
-import { createConsola } from 'consola'
+import { createLogger } from './utils'
 
 let client: Client | null = null
 
-const logger = createConsola({
-  defaults: {
-    tag: 'OSC',
-  },
-  formatOptions: {
-    date: true,
-  },
-})
+const logger = createLogger('OSC')
 
 const getEnvConfig = () => {
   let finalHost = '0.0.0.0'
