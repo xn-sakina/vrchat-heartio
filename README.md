@@ -13,7 +13,7 @@ Monitor your heart rate and display it in VRChat.
   pnpm i
 ```
 
-2. create · config file
+2. create `.env` config file:
 
 ```ini
 OSC_PORT=9000
@@ -21,7 +21,7 @@ OSC_HOST=0.0.0.0
 HEART_RATE_DEVICE_NAME="XXXXXX"
 ```
 
-3. run
+3. run:
 
 ```bash
   pnpm start
