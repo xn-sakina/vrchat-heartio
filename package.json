@@ -2,7 +2,9 @@
   "name": "heartio",
   "version": "1.0.0",
   "private": true,
-  "scripts": {},
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
   "author": "fz6m",
   "packageManager": "pnpm@10.10.0",
   "pnpm": {
