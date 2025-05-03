@@ -1,32 +1,51 @@
 # vrchat-heartio
 
-Monitor your heart rate and display it in VRChat.
+A real-time heart rate monitoring solution that connects to Bluetooth heart rate devices and displays your heart rate in VRChat through OSC messages.
 
-> [!IMPORTANT]
-> You should use bluetooth heart rate devices like `Polar`, `CooSpo`, or `Garmin`, which can get data directly without a server.
+## Features
 
-### Usage
+- Connect directly to Bluetooth heart rate devices (`Polar`, `CooSpo`, `Garmin`, etc.)
+- Automatically displays heart rate in VRChat via OSC protocol
+- Dynamic heart display styles based on BPM levels
+- Data logging with SQLite for tracking your heart rate over time
 
-1. install deps:
+## Setup
+
+1. Install dependencies:
 
 ```bash
   pnpm i
 ```
 
-2. create `.env` config file:
+2. Create `.env` config file in the root directory:
 
 ```ini
 OSC_PORT=9000
-OSC_HOST=0.0.0.0
-HEART_RATE_DEVICE_NAME="XXXXXX"
+OSC_HOST=127.0.0.1
+HEART_RATE_DEVICE_NAME="YOUR_DEVICE_NAME"
 ```
 
-3. run:
+> The `HEART_RATE_DEVICE_NAME` should match exactly with your Bluetooth device's name.
+
+## Usage
+
+Start the application:
 
 ```bash
   pnpm start
 ```
 
-# License
+The application will:
+1. Search for your heart rate device
+2. Connect and start receiving BPM data
+3. Send the heart rate to VRChat via OSC
+4. Store readings in a local SQLite database
+
+## Troubleshooting
+
+- Make sure your heart rate device is powered on and in pairing mode
+- Verify that VRChat is properly configured to receive OSC messages
+
+## License
 
 MIT
