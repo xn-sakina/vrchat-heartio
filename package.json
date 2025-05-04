@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "tsx src/index.ts"
+    "start": "tsx src/index.ts",
+    "dev": "pnpm start"
   },
   "author": "fz6m",
   "packageManager": "pnpm@10.10.0",
