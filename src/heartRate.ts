@@ -45,6 +45,12 @@ export class HeartRate {
   // for db
   private db: DatabaseIns | undefined
 
+  // for timer
+  private timerList: NodeJS.Timeout[] = []
+
+  // for timeout checker
+  private prevReceiveTime = 0
+
   private async initDataDB() {
     const dbPath = path.join(CACHE_DIR, 'data.sqlite')
     if (this.db) {
@@ -106,6 +112,8 @@ export class HeartRate {
       logger.error('Error:', errorMsg)
     }
     logger.info('Exiting...')
+    // clear all timers
+    this.clearAllTimers()
     // stop scanning
     try {
       await noble.stopScanningAsync()
@@ -220,6 +228,9 @@ export class HeartRate {
         heartRate = data.readUInt8(1) // UInt8
       }
 
+      // update receive time
+      this.prevReceiveTime = Date.now()
+
       // Print the heart rate value
       logger.debug('Heart Rate:', heartRate)
 
@@ -291,12 +302,46 @@ export class HeartRate {
     return false
   }
 
+  private async initTimeoutChecker() {
+    const timeoutTime = 20 * 1e3 // 20 seconds
+    const timer = setInterval(async () => {
+      logger.debug('Checking for timeout...')
+
+      if (!this.prevReceiveTime) {
+        // pass
+        return
+      }
+
+      const now = Date.now()
+      const duration = now - this.prevReceiveTime
+      const isTimeout = duration > timeoutTime
+      if (isTimeout) {
+        logger.warn(`Timeout detected: ${duration / 1e3}s, no data received`)
+        // exit process
+        await this.exit('Timeout detected, no data received')
+      }
+    }, 5 * 1e3)
+    // push
+    this.timerList.push(timer)
+  }
+
   private async startMemoryLeakDetector() {
     this.startTime = Date.now()
 
-    setInterval(async () => {
+    const timer = setInterval(async () => {
       await this.detectMemoryLeak()
     }, 5 * 1e3)
+    // push
+    this.timerList.push(timer)
+  }
+
+  private clearAllTimers() {
+    if (this.timerList.length) {
+      this.timerList.forEach((timer) => {
+        clearInterval(timer)
+      })
+      this.timerList = []
+    }
   }
 
   private async listenExitSignal() {
@@ -346,5 +391,8 @@ export class HeartRate {
 
     // keep system awake
     await this.keepSystemAwake()
+
+    // init timeout checker
+    await this.initTimeoutChecker()
   }
 }
