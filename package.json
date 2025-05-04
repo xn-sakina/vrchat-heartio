@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "tsx src/index.ts",
-    "dev": "pnpm start"
+    "dev": "pnpm start",
+    "format": "prettier --cache --parser typescript --write 'src/**/*.ts'"
   },
   "author": "fz6m",
   "packageManager": "pnpm@10.10.0",
@@ -24,6 +25,7 @@
     "dotenv": "^16.5.0",
     "lodash": "^4.17.21",
     "node-osc": "^9.1.4",
+    "prettier": "^3.5.3",
     "tsx": "^4.19.4",
     "zx": "^8.5.3"
   }
