@@ -50,6 +50,7 @@ export class HeartRate {
 
   // for timeout checker
   private prevReceiveTime = 0
+  private killCaffeinate: (() => void) | undefined
 
   private async initDataDB() {
     const dbPath = path.join(CACHE_DIR, 'data.sqlite')
@@ -114,6 +115,10 @@ export class HeartRate {
     logger.info('Exiting...')
     // clear all timers
     this.clearAllTimers()
+    // kill caffeinate
+    if (this.killCaffeinate) {
+      this.killCaffeinate()
+    }
     // stop scanning
     try {
       await noble.stopScanningAsync()
@@ -368,6 +373,7 @@ export class HeartRate {
       caffeinate.kill()
       logger.info('Caffeinate killed')
     }
+    this.killCaffeinate = killCaffeinate
     process.on('SIGINT', () => {
       killCaffeinate()
     })
