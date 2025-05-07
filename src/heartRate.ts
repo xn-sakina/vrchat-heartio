@@ -9,17 +9,21 @@ import { createLogger } from './utils'
 import { spawn } from 'child_process'
 
 enum EHeartLevel {
+  low = 'low',
   normal = 'normal',
   high = 'high',
-  super_high = 'super_high',
-  full = 'full',
+  max = 'max',
+  ultra = 'ultra',
 }
 
+const BPM_PLACEHOLDER = '{{bpm}}'
+
 const HEART_LEVEL_LABEL: Record<EHeartLevel, string> = {
-  [EHeartLevel.normal]: '♡ {{bpm}}',
-  [EHeartLevel.high]: '❤️ {{bpm}}',
-  [EHeartLevel.super_high]: '💕 {{bpm}} 💕',
-  [EHeartLevel.full]: '❤️💕 {{bpm}} 💕❤️',
+  [EHeartLevel.low]: `♡ ${BPM_PLACEHOLDER}`,
+  [EHeartLevel.normal]: `❤️ ${BPM_PLACEHOLDER}`,
+  [EHeartLevel.high]: `💕 ${BPM_PLACEHOLDER} 💕`,
+  [EHeartLevel.max]: `❤️💕 ${BPM_PLACEHOLDER} 💕❤️`,
+  [EHeartLevel.ultra]: `❤️❤️❤️ ${BPM_PLACEHOLDER} ❤️❤️❤️`,
 } as const
 
 const HEART_RATE_SERVICE_UUID = '180d'
@@ -96,15 +100,17 @@ export class HeartRate {
     }
     let placeholder: string
     if (bpm < 70) {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.normal]
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.low]
     } else if (bpm < 80) {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.high]
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.normal]
     } else if (bpm < 100) {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.super_high]
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.high]
+    } else if (bpm < 130) {
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.max]
     } else {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.full]
+      placeholder = HEART_LEVEL_LABEL[EHeartLevel.ultra]
     }
-    const text = placeholder.replace('{{bpm}}', bpm.toString())
+    const text = placeholder.replace(BPM_PLACEHOLDER, bpm.toString())
     return text
   }
 
