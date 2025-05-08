@@ -268,10 +268,10 @@ export class HeartRate {
       logger.debug('Too fast, skipping send')
       return
     } else {
-      // update prevSendTime
-      this.prevSendTime = now
       const gap = (now - this.prevSendTime) / 1e3
       logger.debug(`Send gap: ${gap}s`)
+      // update prevSendTime
+      this.prevSendTime = now
     }
     await sendOscMessage(text)
   }
