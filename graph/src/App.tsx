@@ -1,0 +1,237 @@
+import ReactECharts from 'echarts-for-react'
+import data from './heart_rate_data.json'
+import * as echarts from 'echarts/core'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import { useRef, useState } from 'react'
+
+dayjs.extend(utc)
+
+interface IHeart {
+  time: number
+  bpm: number
+}
+
+const heartData = data as IHeart[]
+heartData.sort((a, b) => a.time - b.time)
+const seriesData = heartData.map((item) => {
+  return [item.time * 1e3, item.bpm]
+})
+
+const originOptions = {
+  title: {
+    text: `VRChat 心率变化图 时间 ${dayjs(seriesData[0][0]).format('MM-DD HH:mm')} ~ ${dayjs(seriesData.at(-1)![0]).format('MM-DD HH:mm')}`,
+    left: 'center',
+    textStyle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: '#111827',
+    },
+  },
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: '#fff',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    textStyle: {
+      color: '#111',
+    },
+    formatter: (params: any) => {
+      const { data } = params[0]
+      const timeStr = dayjs.utc(data[0]).add(9, 'hour').format('HH:mm')
+      return `时间: ${timeStr}<br/>心率: ${data[1]} bpm`
+    },
+  },
+  xAxis: {
+    type: 'time',
+    name: '时间',
+    nameTextStyle: {
+      fontWeight: 'bold',
+      fontSize: 14,
+    },
+    axisLabel: {
+      fontWeight: 'bold',
+      fontSize: 12,
+      color: '#374151',
+      formatter: (value: number) => {
+        return dayjs.utc(value).add(9, 'hour').format('HH:mm:ss')
+      },
+    },
+    axisLine: {
+      lineStyle: {
+        width: 2,
+        color: '#9ca3af',
+      },
+    },
+    splitLine: {
+      show: false,
+    },
+  },
+  yAxis: {
+    type: 'value',
+    name: '心率 (bpm)',
+    nameTextStyle: {
+      fontWeight: 'bold',
+      fontSize: 14,
+    },
+    axisLabel: {
+      fontWeight: 'bold',
+      fontSize: 12,
+      color: '#374151',
+    },
+    axisLine: {
+      lineStyle: {
+        width: 2,
+        color: '#9ca3af',
+      },
+    },
+    splitLine: {
+      lineStyle: {
+        color: '#e5e7eb',
+        width: 1,
+        type: 'dashed',
+      },
+    },
+  },
+  dataZoom: [
+    { type: 'inside', throttle: 50 },
+    { type: 'slider', backgroundColor: '#f3f4f6', borderColor: '#d1d5db' },
+  ],
+  visualMap: {
+    show: false,
+    type: 'continuous',
+    seriesIndex: 0,
+    min: 40,
+    max: 180,
+    inRange: {
+      color: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'], // 蓝绿黄红
+    },
+  },
+  series: [
+    {
+      name: '心率',
+      type: 'line',
+      smooth: true,
+      showSymbol: false,
+      sampling: 'lttb',
+      large: true,
+      lineStyle: {
+        width: 2,
+      },
+      areaStyle: {
+        opacity: 0.1,
+      },
+      data: seriesData,
+      markPoint: {
+        symbol: 'circle',
+        symbolSize: 8, // 小圆点
+        data: [
+          {
+            type: 'max',
+            name: '最大心率',
+            label: {
+              formatter: 'MAX {c} bpm',
+              position: 'top',
+              fontSize: 12,
+              color: '#ef4444',
+              padding: [0, 0, 4, 0],
+              fontWeight: 'bold',
+            },
+          },
+          {
+            type: 'min',
+            name: '最小心率',
+            label: {
+              formatter: 'MIN {c} bpm',
+              position: 'bottom',
+              fontSize: 12,
+              color: '#3b82f6',
+              padding: [4, 0, 0, 0],
+              fontWeight: 'bold',
+            },
+          },
+        ],
+        itemStyle: {
+          color: '#ef4444', // 小圆点颜色统一
+        },
+      },
+      markLine: {
+        symbol: ['none', 'none'],
+        lineStyle: {
+          type: 'dashed',
+          color: '#d1d5db',
+          width: 1,
+        },
+        label: { show: false }, // 不显示图中 label
+        data: (() => {
+          const max = seriesData.reduce((a, b) => (b[1] > a[1] ? b : a))
+          const min = seriesData.reduce((a, b) => (b[1] < a[1] ? b : a))
+          return [
+            [{ coord: [max[0], 0] }, { coord: [max[0], max[1]] }],
+            [{ coord: [min[0], 0] }, { coord: [min[0], min[1]] }],
+          ]
+        })(),
+      },
+    },
+  ],
+}
+
+function App() {
+  const chartRef = useRef<any>(null)
+  const [options, setOptions] = useState(originOptions)
+
+  const onEchartsReady = (chart: any) => {
+    if (!chart?.getHeight) {
+      return
+    }
+
+    const max = seriesData.reduce((a, b) => (b[1] > a[1] ? b : a))
+    const min = seriesData.reduce((a, b) => (b[1] < a[1] ? b : a))
+
+    const maxPixel = chart.convertToPixel({ xAxisIndex: 0 }, max[0])
+    const minPixel = chart.convertToPixel({ xAxisIndex: 0 }, min[0])
+
+    chart.setOption({
+      graphic: [
+        {
+          type: 'text',
+          style: {
+            text: dayjs.utc(max[0]).add(9, 'hour').format('HH:mm:ss'),
+            fill: '#ef4444',
+            fontSize: 12,
+            textAlign: 'center',
+            fontWeight: 'bold',
+          },
+          position: [maxPixel, chart.getHeight() - 62],
+          z: 100,
+        },
+        {
+          type: 'text',
+          style: {
+            text: dayjs.utc(min[0]).add(9, 'hour').format('HH:mm:ss'),
+            fill: '#3b82f6',
+            fontSize: 12,
+            textAlign: 'center',
+            fontWeight: 'bold',
+          },
+          position: [minPixel, chart.getHeight() - 62],
+          z: 100,
+        },
+      ],
+    })
+  }
+
+  return (
+    <div style={{ padding: 30 }}>
+      <ReactECharts
+        echarts={echarts}
+        option={options}
+        style={{ width: '100%', height: '400px' }}
+        ref={chartRef}
+        onChartReady={onEchartsReady}
+      />
+    </div>
+  )
+}
+
+export default App
