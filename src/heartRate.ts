@@ -1,4 +1,4 @@
-import { isNumber } from 'lodash'
+import { isNumber, sample } from 'lodash'
 import noble, { Peripheral } from '@stoprocent/noble'
 import { sendOscMessage } from './osc'
 import path from 'path'
@@ -14,16 +14,25 @@ enum EHeartLevel {
   high = 'high',
   max = 'max',
   ultra = 'ultra',
+  extreme = 'extreme',
 }
 
 const BPM_PLACEHOLDER = '{{bpm}}'
 
-const HEART_LEVEL_LABEL: Record<EHeartLevel, string> = {
+const HEART_LEVEL_LABEL: Record<EHeartLevel, string | string[]> = {
   [EHeartLevel.low]: `♡ ${BPM_PLACEHOLDER}`,
   [EHeartLevel.normal]: `❤️ ${BPM_PLACEHOLDER}`,
   [EHeartLevel.high]: `💕 ${BPM_PLACEHOLDER} 💕`,
   [EHeartLevel.max]: `❤️💕 ${BPM_PLACEHOLDER} 💕❤️`,
-  [EHeartLevel.ultra]: `❤️❤️❤️ ${BPM_PLACEHOLDER} ❤️❤️❤️`,
+  [EHeartLevel.ultra]: [
+    `❤️❤️❤️ ${BPM_PLACEHOLDER} ❤️❤️❤️`,
+    `💕💕💕 ${BPM_PLACEHOLDER} 💕💕💕`,
+  ],
+  [EHeartLevel.extreme]: [
+    `❤️❤️❤️❤️ ${BPM_PLACEHOLDER} ❤️❤️❤️❤️`,
+    `💕💕💕💕 ${BPM_PLACEHOLDER} 💕💕💕💕`,
+    `LOVE ❤️ ${BPM_PLACEHOLDER} ❤️ LOVE`,
+  ],
 } as const
 
 const HEART_RATE_SERVICE_UUID = '180d'
@@ -98,17 +107,31 @@ export class HeartRate {
       logger.error('Invalid heart rate value:', bpm)
       return
     }
+    const getPlaceholder = (level: EHeartLevel) => {
+      const placeholder = HEART_LEVEL_LABEL[level]
+      if (!placeholder) {
+        throw new Error(`Invalid heart level: ${level}`)
+      }
+      if (Array.isArray(placeholder)) {
+        const randomItem = sample(placeholder)
+        return randomItem!
+      }
+      return placeholder
+    }
     let placeholder: string
     if (bpm < 70) {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.low]
+      placeholder = getPlaceholder(EHeartLevel.low)
     } else if (bpm < 80) {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.normal]
+      placeholder = getPlaceholder(EHeartLevel.normal)
     } else if (bpm < 100) {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.high]
+      placeholder = getPlaceholder(EHeartLevel.high)
     } else if (bpm < 130) {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.max]
+      placeholder = getPlaceholder(EHeartLevel.max)
+    } else if (bpm < 150) {
+      placeholder = getPlaceholder(EHeartLevel.ultra)
     } else {
-      placeholder = HEART_LEVEL_LABEL[EHeartLevel.ultra]
+      // >= 150
+      placeholder = getPlaceholder(EHeartLevel.extreme)
     }
     const text = placeholder.replace(BPM_PLACEHOLDER, bpm.toString())
     return text
