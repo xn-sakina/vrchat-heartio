@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "export:data": "python ./scripts/export.py"
+    "export:data": "python3 ./scripts/export.py"
   },
   "dependencies": {
     "dayjs": "^1.11.13",
