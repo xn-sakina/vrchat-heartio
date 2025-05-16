@@ -1,0 +1,65 @@
+.DS_Store
+/node_modules
+
+# Xcode
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Other
+*.moved-aside
+*.xcuserdatad
+*.orig
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# AppCode
+.idea/
+
+# SwiftPM
+.swiftpm/
+
+# Archives
+*.xcarchive
+
+# xcworkspace user data
+*.xcworkspace/xcuserdata
+
+# Local environment settings
+.env

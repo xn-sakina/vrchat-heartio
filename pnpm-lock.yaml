@@ -54,6 +54,8 @@ importers:
         specifier: ^8.5.3
         version: 8.5.3
 
+  apple-watch: {}
+
   graph:
     dependencies:
       dayjs:

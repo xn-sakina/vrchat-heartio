@@ -1,5 +1,6 @@
 packages:
  - './'
  - './graph'
+ - './apple-watch'
 
 neverBuiltDependencies: []
