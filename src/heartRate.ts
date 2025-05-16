@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import Database, { type Database as DatabaseIns } from 'better-sqlite3'
 import { createLogger } from './utils'
 import { spawn } from 'child_process'
+import express from 'express'
 
 enum EHeartLevel {
   low = 'low',
@@ -46,6 +47,8 @@ if (!fs.existsSync(CACHE_DIR)) {
   fs.mkdirSync(CACHE_DIR, { recursive: true })
   logger.info('Cache directory created')
 }
+
+const enableAppleWatchServer = process.env.APPLE_WATCH === 'true'
 
 export class HeartRate {
   private device: Peripheral | undefined
@@ -411,6 +414,43 @@ export class HeartRate {
     })
   }
 
+  async startAppleWatchServer() {
+    if (!enableAppleWatchServer) {
+      return
+    }
+    logger.info('Starting Apple Watch server...')
+    const port = 2333
+    const app = express()
+    // listen
+    app.get('/heart', async (req, res) => {
+      const bpm = req.query?.bpm
+      if (!bpm) {
+        res.status(400).send('Missing bpm parameter')
+        return
+      }
+      const bpmNum = Number(bpm)
+      if (isNaN(bpmNum)) {
+        res.status(400).send('Invalid bpm parameter')
+        return
+      }
+      if (bpmNum < 0) {
+        res.status(400).send('Invalid bpm parameter')
+        return
+      }
+      // send to osc
+      try {
+        await this.sendToOSC(bpmNum)
+        res.status(200).send('OK')
+      } catch (error) {
+        logger.error('Error sending OSC message:', error)
+        res.status(500).send('Error sending OSC message')
+      }
+    })
+    app.listen(port, () => {
+      logger.info(`Apple Watch server started on port ${port}`)
+    })
+  }
+
   async start() {
     // listen for exit signal
     await this.listenExitSignal()
@@ -422,7 +462,11 @@ export class HeartRate {
     await this.startMemoryLeakDetector()
 
     // start heart rate
-    await this.startListenHeartRate()
+    if (enableAppleWatchServer) {
+      await this.startAppleWatchServer()
+    } else {
+      await this.startListenHeartRate()
+    }
 
     // keep system awake
     await this.keepSystemAwake()
