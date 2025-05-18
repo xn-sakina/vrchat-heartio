@@ -187,12 +187,20 @@ export class HeartRate {
 
   private async startListenHeartRate() {
     const localDeviceName = process.env.HEART_RATE_DEVICE_NAME
-    if (!localDeviceName?.length) {
-      // exit with error
-      await this.exit('HEART_RATE_DEVICE_NAME is not set')
-      return
+    const localDeviceAddress = process.env.HEART_RATE_DEVICE_ADDRESS
+
+    let usingDeviceName = false
+    let usingDeviceAddress = false
+
+    if (localDeviceName && localDeviceName?.length) {
+      usingDeviceName = true
+    } else if (localDeviceAddress && localDeviceAddress?.length) {
+      usingDeviceAddress = true
     } else {
-      logger.info(`Looking for device: ${localDeviceName}`)
+      logger.error(
+        'No device name or address provided, please set "HEART_RATE_DEVICE_NAME" or "HEART_RATE_DEVICE_ADDRESS"',
+      )
+      throw new Error('No device name or address provided')
     }
 
     // Discover peripherals as an async generator
@@ -218,14 +226,39 @@ export class HeartRate {
           return
         }
 
-        if (peripheral.advertisement.localName === localDeviceName) {
+        let isTarget = false
+        if (usingDeviceName) {
+          const deviceName = peripheral.advertisement.localName
+          if (
+            deviceName?.length &&
+            localDeviceName?.length &&
+            deviceName.toLowerCase() === localDeviceName.toLowerCase()
+          ) {
+            isTarget = true
+          }
+        } else if (usingDeviceAddress) {
+          const deviceAddress = peripheral.address
+          if (
+            deviceAddress?.length &&
+            localDeviceAddress?.length &&
+            deviceAddress.toLowerCase() === localDeviceAddress.toLowerCase()
+          ) {
+            isTarget = true
+          }
+        } else {
+          // never
+        }
+
+        if (isTarget) {
+          const deviceMark = usingDeviceName
+            ? peripheral.advertisement.localName
+            : usingDeviceAddress
+              ? peripheral.address
+              : 'Unknown'
           // connect
           await peripheral.connectAsync()
           device = peripheral
-          logger.info(
-            'Connected to device:',
-            peripheral.advertisement.localName,
-          )
+          logger.info('Connected to device:', deviceMark)
           break
         }
       }
