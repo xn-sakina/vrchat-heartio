@@ -7,6 +7,8 @@ import { useRef, useState } from 'react'
 
 dayjs.extend(utc)
 
+const currentSystemUtcOffset = (new Date().getTimezoneOffset() / 60) * -1
+
 interface IHeart {
   time: number
   bpm: number
@@ -39,7 +41,10 @@ const originOptions = {
     },
     formatter: (params: any) => {
       const { data } = params[0]
-      const timeStr = dayjs.utc(data[0]).add(9, 'hour').format('HH:mm')
+      const timeStr = dayjs
+        .utc(data[0])
+        .add(currentSystemUtcOffset, 'hour')
+        .format('HH:mm')
       return `时间: ${timeStr}<br/>心率: ${data[1]} bpm`
     },
   },
@@ -55,7 +60,10 @@ const originOptions = {
       fontSize: 12,
       color: '#374151',
       formatter: (value: number) => {
-        return dayjs.utc(value).add(9, 'hour').format('HH:mm:ss')
+        return dayjs
+          .utc(value)
+          .add(currentSystemUtcOffset, 'hour')
+          .format('HH:mm:ss')
       },
     },
     axisLine: {
@@ -197,7 +205,10 @@ function App() {
         {
           type: 'text',
           style: {
-            text: dayjs.utc(max[0]).add(9, 'hour').format('HH:mm:ss'),
+            text: dayjs
+              .utc(max[0])
+              .add(currentSystemUtcOffset, 'hour')
+              .format('HH:mm:ss'),
             fill: '#ef4444',
             fontSize: 12,
             textAlign: 'center',
@@ -209,7 +220,10 @@ function App() {
         {
           type: 'text',
           style: {
-            text: dayjs.utc(min[0]).add(9, 'hour').format('HH:mm:ss'),
+            text: dayjs
+              .utc(min[0])
+              .add(currentSystemUtcOffset, 'hour')
+              .format('HH:mm:ss'),
             fill: '#3b82f6',
             fontSize: 12,
             textAlign: 'center',
