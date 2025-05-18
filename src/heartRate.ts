@@ -191,16 +191,18 @@ export class HeartRate {
 
     let usingDeviceName = false
     let usingDeviceAddress = false
+    let usingGuess = false
 
     if (localDeviceName && localDeviceName?.length) {
       usingDeviceName = true
     } else if (localDeviceAddress && localDeviceAddress?.length) {
       usingDeviceAddress = true
     } else {
-      logger.error(
+      logger.warn(
         'No device name or address provided, please set "HEART_RATE_DEVICE_NAME" or "HEART_RATE_DEVICE_ADDRESS"',
       )
-      throw new Error('No device name or address provided')
+      logger.info('Using guess mode, will try to connect to heart rate device')
+      usingGuess = true
     }
 
     // Discover peripherals as an async generator
@@ -227,8 +229,9 @@ export class HeartRate {
         }
 
         let isTarget = false
+        const deviceName = peripheral.advertisement.localName
+        const deviceAddress = peripheral.address
         if (usingDeviceName) {
-          const deviceName = peripheral.advertisement.localName
           if (
             deviceName?.length &&
             localDeviceName?.length &&
@@ -237,7 +240,6 @@ export class HeartRate {
             isTarget = true
           }
         } else if (usingDeviceAddress) {
-          const deviceAddress = peripheral.address
           if (
             deviceAddress?.length &&
             localDeviceAddress?.length &&
@@ -246,7 +248,27 @@ export class HeartRate {
             isTarget = true
           }
         } else {
-          // never
+          const serviceUUIDs = peripheral.advertisement.serviceUuids
+          const hasHeartRateService =
+            serviceUUIDs?.length &&
+            serviceUUIDs.includes(HEART_RATE_SERVICE_UUID)
+          if (hasHeartRateService) {
+            // try connect to this device
+            isTarget = true
+            // log
+            logger.warn(
+              `Found heart rate device: ${deviceName || 'Unknown'} (${deviceAddress || 'No Address'}), Waiting connection...`,
+            )
+            logger.warn(
+              `
+Recommended to set "HEART_RATE_DEVICE_NAME" or "HEART_RATE_DEVICE_ADDRESS" for stable connection
+e.g.
+HEART_RATE_DEVICE_NAME="XXXXXX"
+# or
+HEART_RATE_DEVICE_ADDRESS="XX:XX:XX:XX:XX:XX"
+`.trimStart(),
+            )
+          }
         }
 
         if (isTarget) {
@@ -254,7 +276,11 @@ export class HeartRate {
             ? peripheral.advertisement.localName
             : usingDeviceAddress
               ? peripheral.address
-              : 'Unknown'
+              : usingGuess
+                ? peripheral.advertisement.localName ||
+                  peripheral.address ||
+                  'Unknown'
+                : 'Unknown'
           // connect
           await peripheral.connectAsync()
           device = peripheral
