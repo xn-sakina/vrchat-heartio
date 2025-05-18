@@ -30,7 +30,9 @@ Real-time heart rate monitoring that connects to Bluetooth devices and displays 
     # HEART_RATE_DEVICE_ADDRESS="YOUR_DEVICE_ADDRESS"
     ```
 
-You can use either the device name or address for connection. The device address is recommended for more stable connections.
+Configuration options:
+- You can use either device name or address for connection
+- If both name and address are omitted, the app will automatically connect to any available device with heart rate service (explicit configuration is recommended)
 
 ## Usage
 
@@ -39,6 +41,11 @@ Start the application:
 ```bash
   pnpm start
 ```
+
+## Troubleshooting
+
+- Verify heart rate broadcasting is enabled on your wearable device
+- OSC must be enabled in VRChat settings
 
 ## License
 
