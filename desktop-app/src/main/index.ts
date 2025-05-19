@@ -2,6 +2,32 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { createLogger } from './utils'
+
+const logger = createLogger('main')
+
+import Store from 'electron-store'
+const store = new Store()
+
+enum EIpcEvents {
+  getGlobalConfig = 'getGlobalConfig',
+  setGlobalConfig = 'setGlobalConfig',
+}
+
+class Storage {
+  static keys = {
+    globalConfig: 'globalConfig',
+  }
+
+  static getGlobalConfig() {
+    const config = store.get(Storage.keys.globalConfig) as string | undefined
+    return config
+  }
+
+  static setGlobalConfig(config: string) {
+    store.set(Storage.keys.globalConfig, config)
+  }
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -13,8 +39,8 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
+      sandbox: false,
+    },
   })
 
   mainWindow.on('ready-to-show', () => {
@@ -35,6 +61,19 @@ function createWindow(): void {
   }
 }
 
+const initIPC = () => {
+  // IPC test
+  ipcMain.handle(EIpcEvents.getGlobalConfig, () => {
+    const globalConfig = Storage.getGlobalConfig()
+    logger.log('globalConfig', globalConfig)
+    return globalConfig
+  })
+  ipcMain.handle(EIpcEvents.setGlobalConfig, (_event, config) => {
+    Storage.setGlobalConfig(config)
+    logger.log('setGlobalConfig', config)
+  })
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -49,8 +88,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  initIPC()
 
   createWindow()
 
