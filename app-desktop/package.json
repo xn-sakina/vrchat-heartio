@@ -1,5 +1,5 @@
 {
-  "name": "heartio-desktop",
+  "name": "heartio-app-desktop",
   "version": "1.0.0",
   "main": "./out/main/index.js",
   "scripts": {
