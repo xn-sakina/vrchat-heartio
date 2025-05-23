@@ -1,5 +1,5 @@
 {
-  "name": "heartio-apple-watch",
+  "name": "heartio-app-apple-watch",
   "private": true,
   "scripts": {
     "sync": "tsx ./scripts/sync.ts"
