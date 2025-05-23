@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '../../sdk-v1/cache/data.sqlite') 
+DB_PATH = os.path.join(os.path.dirname(__file__), '../../cli/cache/data.sqlite') 
 OUTPUT_FILE = os.path.join(os.path.dirname(__file__), '../src/heart_rate_data.json')
 HOURS = 5
 
