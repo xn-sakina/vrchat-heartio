@@ -3,15 +3,23 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { createLogger } from './utils'
+import Store from 'electron-store'
+import { HeartRate } from './heartRate'
 
 const logger = createLogger('main')
-
-import Store from 'electron-store'
 const store = new Store()
 
 enum EIpcEvents {
+  // config
   getGlobalConfig = 'getGlobalConfig',
   setGlobalConfig = 'setGlobalConfig',
+
+  // start searching
+  startSearching = 'startSearching',
+  stopSearching = 'stopSearching',
+
+  // get latest device list
+  getLatestDeviceList = 'getLatestDeviceList',
 }
 
 class Storage {
@@ -61,16 +69,37 @@ function createWindow(): void {
   }
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 const initIPC = () => {
-  // IPC test
+  // config
   ipcMain.handle(EIpcEvents.getGlobalConfig, () => {
     const globalConfig = Storage.getGlobalConfig()
-    logger.log('globalConfig', globalConfig)
+    logger.log('[CALL] globalConfig', globalConfig)
     return globalConfig
   })
   ipcMain.handle(EIpcEvents.setGlobalConfig, (_event, config) => {
     Storage.setGlobalConfig(config)
-    logger.log('setGlobalConfig', config)
+    logger.log('[CALL] setGlobalConfig', config)
+  })
+
+  // start searching
+  ipcMain.handle(EIpcEvents.startSearching, async () => {
+    await sleep(500)
+    logger.log('[CALL] startSearching')
+    return HeartRate.startSearching()
+  })
+  ipcMain.handle(EIpcEvents.stopSearching, async () => {
+    await sleep(500)
+    logger.log('[CALL] stopSearching')
+    return HeartRate.stopSearching()
+  })
+
+  // get latest device list
+  ipcMain.handle(EIpcEvents.getLatestDeviceList, async () => {
+    await sleep(500)
+    logger.log('[CALL] getLatestDeviceList')
+    return HeartRate.getLatestDeviceList()
   })
 }
 
