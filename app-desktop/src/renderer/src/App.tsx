@@ -1,8 +1,5 @@
-import { Box, Button, LoadingOverlay } from '@mantine/core'
 import { EIpcEvents } from './constants'
 import { useEffect, useState } from 'react'
-import { Notification } from '@mantine/core'
-import { IconX } from '@tabler/icons-react'
 import styles from './App.module.scss'
 
 export default function App() {
@@ -30,22 +27,5 @@ export default function App() {
     init()
   }, [])
 
-  return (
-    <div className={styles.app}>
-      <Box pos="relative" className={styles.box}>
-        <LoadingOverlay
-          visible={loading}
-          zIndex={1000}
-          overlayProps={{ radius: 'sm', blur: 2 }}
-        />
-        <div>111</div>
-      </Box>
-        <Notification icon={<IconX size={20} />} color="red" title="ERROR">
-          {errorMsg}
-        </Notification>
-      {!!errorMsg?.length && (
-        1
-      )}
-    </div>
-  )
+  return <div className={styles.app}></div>
 }
