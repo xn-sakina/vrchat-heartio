@@ -1,5 +1,5 @@
 {
-  "name": "heartio-graph",
+  "name": "heartio-cli-graph",
   "private": true,
   "version": "0.0.0",
   "type": "module",
