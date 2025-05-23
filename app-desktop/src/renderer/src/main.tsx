@@ -1,12 +1,12 @@
-import { createRoot } from 'react-dom/client'
-
 import 'modern-normalize/modern-normalize.css'
-import '@mantine/core/styles.css'
-import { MantineProvider } from '@mantine/core'
+import '@arco-design/web-react/dist/css/arco.css'
+
+import { createRoot } from 'react-dom/client'
 import App from './App'
+import { Provider } from './components/Provider'
 
 createRoot(document.getElementById('root')!).render(
-  <MantineProvider>
+  <Provider>
     <App />
-  </MantineProvider>,
+  </Provider>,
 )
