@@ -23,17 +23,20 @@ impl Database {
         // Create cache directory if it doesn't exist
         if let Some(parent) = db_path.parent() {
             tokio::fs::create_dir_all(parent).await
-                .context("Failed to create cache directory")?;
+                .with_context(|| format!("Failed to create cache directory: {}", parent.display()))?;
         }
 
-        let database_url = format!("sqlite:{}", db_path.display());
+        tracing::info!("Attempting to connect to database at: {}", db_path.display());
+        
+        let database_url = format!("sqlite:{}?mode=rwc", db_path.display());
         let pool = SqlitePool::connect(&database_url).await
-            .context("Failed to connect to SQLite database")?;
+            .with_context(|| format!("Failed to connect to SQLite database at {}", db_path.display()))?;
 
         let db = Self { pool };
-        db.init_tables().await?;
+        db.init_tables().await
+            .context("Failed to initialize database tables")?;
         
-        tracing::info!("Database initialized at {}", db_path.display());
+        tracing::info!("Database initialized successfully at {}", db_path.display());
         Ok(db)
     }
 
