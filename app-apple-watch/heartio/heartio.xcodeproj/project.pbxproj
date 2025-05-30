@@ -349,7 +349,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.kanamio.aw.heartio;
+				PRODUCT_BUNDLE_IDENTIFIER = org.kanami.aw.heartio;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -383,7 +383,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.kanamio.aw.heartio;
+				PRODUCT_BUNDLE_IDENTIFIER = org.kanami.aw.heartio;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -404,7 +404,7 @@
 				
 				INFOPLIST_KEY_CFBundleDisplayName = heartio;
 				MARKETING_VERSION = 1.1;
-				PRODUCT_BUNDLE_IDENTIFIER = org.kanamio.aw.heartio.heartio;
+				PRODUCT_BUNDLE_IDENTIFIER = org.kanami.aw.heartio.heartio;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
@@ -420,7 +420,7 @@
 				
 				INFOPLIST_KEY_CFBundleDisplayName = heartio;
 				MARKETING_VERSION = 1.1;
-				PRODUCT_BUNDLE_IDENTIFIER = org.kanamio.aw.heartio.heartio;
+				PRODUCT_BUNDLE_IDENTIFIER = org.kanami.aw.heartio.heartio;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
