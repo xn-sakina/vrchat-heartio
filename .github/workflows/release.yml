@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g.: v1, v2)'
+        required: true
+        type: string
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: macos
+            build_command: just build-macos
+            binary_name: heartio-rust
+            artifact_name: heartio_${{ github.event.inputs.version }}_macos
+          - os: windows-latest
+            target: windows
+            build_command: just build-windows
+            binary_name: heartio-rust.exe
+            artifact_name: heartio_${{ github.event.inputs.version }}.exe
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup just
+        uses: extractions/setup-just@v1
+
+      - name: Build binary
+        run: |
+          ${{ matrix.build_command }}
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          cd ./app-rust/target/release
+          if [ "${{ matrix.target }}" = "windows" ]; then
+            mv heartio-rust.exe heartio_${{ github.event.inputs.version }}.exe
+          else
+            mv heartio-rust heartio_${{ github.event.inputs.version }}_macos
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}-binary
+          path: app-rust/target/release/heartio_${{ github.event.inputs.version }}*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: ${{ github.event.inputs.version }}
+          files: |
+            ./artifacts/macos-binary/heartio_${{ github.event.inputs.version }}_macos
+            ./artifacts/windows-binary/heartio_${{ github.event.inputs.version }}.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
