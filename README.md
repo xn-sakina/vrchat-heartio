@@ -80,6 +80,12 @@ View heart rate data in a web-based graph interface:
 - **Device not found**: The Bluetooth reception range of most motherboards is very limited. If your device is not detected, try moving closer to your computer or consider purchasing a USB Bluetooth adapter for better range and reliability
 - **Connection issues**: Make sure your heart rate device is not connected to other applications
 
+## Development Notes
+
+All code except the Node.js CLI were generated through vibe coding:
+- **Apple Watch App**、**Graph Visualization**: Created with GPT-4o
+- **Rust Version**: Claude Sonnet 4
+
 ## License
 
 MIT
