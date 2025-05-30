@@ -25,10 +25,16 @@ const run = async () => {
   )
   const projConfig = fs.readFileSync(projConfigFile, 'utf-8')
   // remove DEVELOPMENT_TEAM
-  const newProjConfig = projConfig.replace(
+  let newProjConfig = projConfig.replace(
     /DEVELOPMENT_TEAM = [0-9A-Z]{10};/g,
     '',
   )
+  // fix project identifier
+  newProjConfig = newProjConfig.replace(
+    'org.kanamio.aw.heartio',
+    'org.kanami.aw.heartio',
+  )
+
   fs.writeFileSync(projConfigFile, newProjConfig)
 }
 
