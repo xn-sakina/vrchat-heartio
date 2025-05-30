@@ -64,15 +64,21 @@ async fn main() -> Result<()> {
     // Start heart rate monitoring and GUI concurrently
     tracing::info!("Starting HeartIO application...");
     
-    // Start heart rate monitor in background task
-    tokio::spawn(async move {
+    // Start heart rate monitor in background task and keep the handle
+    let heart_monitor_handle = tokio::spawn(async move {
         if let Err(e) = heart_monitor.start().await {
             tracing::error!("Heart rate monitor error: {}", e);
         }
     });
 
     // Run GUI on main thread (blocking call)
-    if let Err(e) = gui::run_gui_app(log_receiver, gui_heart_rate_receiver).await {
+    let gui_result = gui::run_gui_app(log_receiver, gui_heart_rate_receiver).await;
+    
+    // Wait for heart monitor to complete or abort it
+    heart_monitor_handle.abort();
+    let _ = heart_monitor_handle.await;
+    
+    if let Err(e) = gui_result {
         tracing::error!("GUI application error: {}", e);
     }
 

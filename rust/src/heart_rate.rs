@@ -165,14 +165,19 @@ impl HeartRateMonitor {
         self.log_info("Starting Bluetooth monitoring mode...".to_string());
 
         // Initialize Bluetooth monitor
-        let mut bluetooth_monitor = BluetoothHeartRateMonitor::new().await?;
+        let bluetooth_monitor = BluetoothHeartRateMonitor::new().await?;
         
         // Connect to device
         let device_name = self.config.heart_rate_device_name.as_deref();
         let device_address = self.config.heart_rate_device_address.as_deref();
         
-        bluetooth_monitor.connect(device_name, device_address).await?;
+        // Use a separate variable to connect, then store it
+        let mut connected_monitor = bluetooth_monitor;
+        connected_monitor.connect(device_name, device_address).await?;
         self.log_info("Connected to Bluetooth heart rate device".to_string());
+
+        // Store the bluetooth monitor to prevent it from being dropped
+        self.bluetooth_monitor = Some(connected_monitor);
 
         // Start timeout checker
         let _timeout_task = self.start_timeout_checker().await;
@@ -180,27 +185,34 @@ impl HeartRateMonitor {
         // Start monitoring with callback
         let (heart_rate_sender, mut heart_rate_receiver) = tokio_mpsc::unbounded_channel();
         
-        let mut monitoring_task = tokio::spawn(async move {
-            bluetooth_monitor.start_monitoring(move |heart_rate| {
-                let _ = heart_rate_sender.send(heart_rate);
-            }).await
-        });
-
-        // Process heart rate data
-        loop {
-            tokio::select! {
-                heart_rate = heart_rate_receiver.recv() => {
-                    if let Some(heart_rate) = heart_rate {
-                        self.process_heart_rate(heart_rate).await?;
-                    }
+        // Take the bluetooth monitor out of self to move it into the task
+        if let Some(bluetooth_monitor) = self.bluetooth_monitor.take() {
+            let mut monitoring_task = tokio::spawn(async move {
+                if let Err(e) = bluetooth_monitor.start_monitoring(move |heart_rate| {
+                    let _ = heart_rate_sender.send(heart_rate);
+                }).await {
+                    tracing::error!("Bluetooth monitoring error: {}", e);
                 }
-                result = &mut monitoring_task => {
-                    match result {
-                        Ok(Ok(_)) => self.log_info("Bluetooth monitoring completed".to_string()),
-                        Ok(Err(e)) => self.log_error(format!("Bluetooth monitoring error: {}", e)),
-                        Err(e) => self.log_error(format!("Bluetooth monitoring task error: {}", e)),
+            });
+
+            // Process heart rate data
+            loop {
+                tokio::select! {
+                    heart_rate = heart_rate_receiver.recv() => {
+                        if let Some(heart_rate) = heart_rate {
+                            self.process_heart_rate(heart_rate).await?;
+                        } else {
+                            // Channel closed, break the loop
+                            break;
+                        }
                     }
-                    break;
+                    result = &mut monitoring_task => {
+                        match result {
+                            Ok(()) => self.log_info("Bluetooth monitoring completed".to_string()),
+                            Err(e) => self.log_error(format!("Bluetooth monitoring task error: {}", e)),
+                        }
+                        break;
+                    }
                 }
             }
         }
