@@ -20,7 +20,7 @@ For users who prefer a simple setup without development environment, download th
 
 The Rust version provides the same functionality as the Node.js CLI in a single executable file. When you run the Rust binary, it will automatically generate a `heartio.config.json` configuration file in the current directory. The heart rate threshold key in the config represents "less than" values.
 
-```json
+```jsonc
   "HEART_RATE_LABEL": {
     // < 70
     "70": [],
