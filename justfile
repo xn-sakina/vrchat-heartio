@@ -3,7 +3,7 @@ cli_graph_dir := "cli-graph"
 app_apple_watch_dir := "app-apple-watch"
 app_rust_dir := "app-rust"
 
-python_cmd := `which python3 || which python`
+python_cmd := `which python || which python3`
 
 # Install all deps
 install:
