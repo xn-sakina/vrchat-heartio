@@ -34,10 +34,10 @@ impl LogLevel {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LogLevel::Info => "ℹ️",
-            LogLevel::Warn => "⚠️",
-            LogLevel::Error => "❌",
-            LogLevel::Debug => "🔍",
+            LogLevel::Info => "INFO",
+            LogLevel::Warn => "WARN",
+            LogLevel::Error => "ERROR",
+            LogLevel::Debug => "DEBUG",
         }
     }
 }
@@ -65,6 +65,7 @@ pub struct ConnectionStatus {
 pub struct AppStats {
     pub total_heart_rates: u32,
     pub session_duration: std::time::Duration,
+    pub session_start_time: Option<std::time::Instant>,
     pub last_heart_rate_time: Option<DateTime<Local>>,
     pub avg_heart_rate: f32,
 }
@@ -74,6 +75,7 @@ impl Default for AppStats {
         Self {
             total_heart_rates: 0,
             session_duration: std::time::Duration::new(0, 0),
+            session_start_time: None,
             last_heart_rate_time: None,
             avg_heart_rate: 0.0,
         }
@@ -129,6 +131,14 @@ impl eframe::App for HeartIOApp {
             self.add_log_entry(entry);
         }
 
+        // Update session duration
+        let now = std::time::Instant::now();
+        if let Some(start) = self.stats.session_start_time {
+            self.stats.session_duration = now.duration_since(start);
+        } else {
+            self.stats.session_start_time = Some(now);
+        }
+
         // Process incoming heart rate data
         while let Ok(heart_rate) = self.heart_rate_receiver.try_recv() {
             self.current_heart_rate = Some(heart_rate);
@@ -147,17 +157,17 @@ impl eframe::App for HeartIOApp {
         // Top panel with status and controls
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.heading("❤️ HeartIO");
+                ui.heading("HeartIO");
                 
                 ui.separator();
                 
                 // Current heart rate display
                 if let Some(hr) = self.current_heart_rate {
-                    ui.label(egui::RichText::new(format!("💓 {} BPM", hr))
+                    ui.label(egui::RichText::new(format!("{} BPM", hr))
                         .size(18.0)
                         .color(egui::Color32::from_rgb(220, 20, 60)));
                 } else {
-                    ui.label(egui::RichText::new("💓 -- BPM")
+                    ui.label(egui::RichText::new("-- BPM")
                         .size(18.0)
                         .color(egui::Color32::GRAY));
                 }
@@ -179,7 +189,7 @@ impl eframe::App for HeartIOApp {
             .resizable(true)
             .default_width(250.0)
             .show(ctx, |ui| {
-                ui.heading("📊 Statistics");
+                ui.heading("Statistics");
                 ui.separator();
 
                 egui::Grid::new("stats_grid")
@@ -207,14 +217,14 @@ impl eframe::App for HeartIOApp {
                     });
 
                 ui.separator();
-                ui.heading("🔗 Connection");
+                ui.heading("Connection");
                 
                 self.draw_detailed_connection_status(ui);
             });
 
         // Central panel with logs
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("📝 Logs");
+            ui.heading("Logs");
             
             egui::ScrollArea::vertical()
                 .auto_shrink([false; 2])
@@ -256,21 +266,19 @@ impl HeartIOApp {
             }
         };
 
-        ui.label(egui::RichText::new("🔵")
+        ui.label(egui::RichText::new("BT")
             .color(status_color(self.connection_status.bluetooth_connected)));
-        ui.label(egui::RichText::new("📡")
+        ui.label(egui::RichText::new("OSC")
             .color(status_color(self.connection_status.osc_connected)));
-        ui.label(egui::RichText::new("💾")
-            .color(status_color(self.connection_status.database_connected)));
         
         if self.connection_status.apple_watch_server_running {
-            ui.label(egui::RichText::new("⌚")
+            ui.label(egui::RichText::new("AW")
                 .color(status_color(true)));
         }
     }
 
     fn draw_detailed_connection_status(&self, ui: &mut egui::Ui) {
-        let status_icon = |connected: bool| if connected { "✅" } else { "❌" };
+        let status_icon = |connected: bool| if connected { "Connected" } else { "Disconnected" };
         
         ui.horizontal(|ui| {
             ui.label(status_icon(self.connection_status.bluetooth_connected));
@@ -282,14 +290,9 @@ impl HeartIOApp {
             ui.label("OSC Server");
         });
         
-        ui.horizontal(|ui| {
-            ui.label(status_icon(self.connection_status.database_connected));
-            ui.label("Database");
-        });
-        
         if self.connection_status.apple_watch_server_running {
             ui.horizontal(|ui| {
-                ui.label("✅");
+                ui.label("Connected");
                 ui.label("Apple Watch");
             });
         }
