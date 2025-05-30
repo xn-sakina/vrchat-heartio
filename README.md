@@ -1,4 +1,4 @@
-# vrchat-heartio
+# HeartIO
 
 Real-time heart rate monitoring that connects to Bluetooth devices and displays your heart rate in VRChat via OSC.
 
@@ -10,42 +10,75 @@ Real-time heart rate monitoring that connects to Bluetooth devices and displays 
 - Display heart rate in VRChat via OSC protocol
 - Dynamic heart display styles based on BPM
 - SQLite data logging for tracking heart rate over time
+- Web-based graph visualization for heart rate data
 
-## Setup
+## Quick Start (Recommended)
 
-1. Install dependencies:
+For users who prefer a simple setup without development environment, download the pre-built Rust binary from [GitHub Releases](https://github.com/xn-sakina/vrchat-heartio/releases).
 
-    ```bash
-      pnpm i
-    ```
+### Rust Binary Version
 
-2. Create `.env` config file:
+The Rust version provides the same functionality as the Node.js CLI in a single executable file. When you run the Rust binary, it will automatically generate a `heartio.config.json` configuration file in the current directory. The heart rate threshold key in the config represents "less than" values.
 
-    ```ini
-    OSC_PORT=9000
-    OSC_HOST=0.0.0.0
-    # Configure ONE of the following:
-    HEART_RATE_DEVICE_NAME="YOUR_DEVICE_NAME"
-    # OR
-    # HEART_RATE_DEVICE_ADDRESS="YOUR_DEVICE_ADDRESS"
-    ```
+```json
+  "HEART_RATE_LABEL": {
+    // < 70
+    "70": [],
+    // 70 < bpm < 80
+    "80": [],
+  }
+```
+
+## Node.js CLI Version
+
+### Setup
+
+Install dependencies:
+
+```bash
+  just install
+```
+
+### Configuration
+
+Create `.env` file in the `cli` directory:
+
+```ini
+OSC_PORT=9000
+OSC_HOST=0.0.0.0
+# Configure ONE of the following:
+HEART_RATE_DEVICE_NAME="YOUR_DEVICE_NAME"
+# OR
+# HEART_RATE_DEVICE_ADDRESS="YOUR_DEVICE_ADDRESS"
+```
 
 Configuration options:
+
 - You can use either device name or address for connection
 - If both name and address are omitted, the app will automatically connect to any available device with heart rate service (explicit configuration is recommended)
 
-## Usage
+### Usage
 
-Start the application:
+Start the Node.js CLI:
 
 ```bash
-  pnpm start
+  just start
+```
+
+## Graph Visualization
+
+View heart rate data in a web-based graph interface:
+
+```bash
+  just start-graph
 ```
 
 ## Troubleshooting
 
-- Verify heart rate broadcasting is enabled on your wearable device
-- OSC must be enabled in VRChat settings
+- **OSC not working**: Ensure OSC is enabled in VRChat
+- **Bluetooth not working**: Verify heart rate broadcasting is enabled on your wearable device
+- **Device not found**: The Bluetooth reception range of most motherboards is very limited. If your device is not detected, try moving closer to your computer or consider purchasing a USB Bluetooth adapter for better range and reliability
+- **Connection issues**: Make sure your heart rate device is not connected to other applications
 
 ## License
 
