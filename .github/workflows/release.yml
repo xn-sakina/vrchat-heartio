@@ -16,12 +16,12 @@ jobs:
           - os: macos-latest
             target: macos
             build_command: just build-macos
-            binary_name: heartio-rust
+            binary_path: app-rust/target/release/heartio-rust
             artifact_name: heartio_${{ github.event.inputs.version }}_macos
-          - os: windows-latest
+          - os: ubuntu-latest
             target: windows
             build_command: just build-windows
-            binary_name: heartio-rust.exe
+            binary_path: app-rust/target/x86_64-pc-windows-gnu/release/heartio-rust.exe
             artifact_name: heartio_${{ github.event.inputs.version }}.exe
     
     runs-on: ${{ matrix.os }}
@@ -33,25 +33,69 @@ jobs:
       - name: Setup just
         uses: extractions/setup-just@v1
 
+      - name: Install cross-compilation tools (Windows)
+        if: matrix.target == 'windows'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Add Windows target (Windows)
+        if: matrix.target == 'windows'
+        run: rustup target add x86_64-pc-windows-gnu
+
       - name: Build binary
         run: |
           ${{ matrix.build_command }}
 
+      - name: Optimize binary (macOS)
+        if: matrix.target == 'macos'
+        run: |
+          cd app-rust
+          # Additional strip for extra size reduction (already configured in Cargo.toml)
+          strip target/release/heartio-rust || true
+          # Display file size and info
+          echo "=== macOS Binary Info ==="
+          ls -lh target/release/heartio-rust
+          file target/release/heartio-rust
+          du -h target/release/heartio-rust
+
+      - name: Optimize binary (Windows)
+        if: matrix.target == 'windows'
+        run: |
+          cd app-rust
+          # Additional strip for Windows binary (if available)
+          x86_64-w64-mingw32-strip target/x86_64-pc-windows-gnu/release/heartio-rust.exe || true
+          # Display file size and info
+          echo "=== Windows Binary Info ==="
+          ls -lh target/x86_64-pc-windows-gnu/release/heartio-rust.exe
+          file target/x86_64-pc-windows-gnu/release/heartio-rust.exe || true
+          du -h target/x86_64-pc-windows-gnu/release/heartio-rust.exe
+
+      - name: Compress binary with UPX (optional)
+        if: matrix.target == 'windows'
+        run: |
+          echo "DO NOT USE UPX ON WINDOWS BINARY"
+
       - name: Prepare artifact
         shell: bash
         run: |
-          cd ./app-rust/target/release
           if [ "${{ matrix.target }}" = "windows" ]; then
-            mv heartio-rust.exe heartio_${{ github.event.inputs.version }}.exe
+            cp ${{ matrix.binary_path }} heartio_${{ github.event.inputs.version }}.exe
           else
-            mv heartio-rust heartio_${{ github.event.inputs.version }}_macos
+            cp ${{ matrix.binary_path }} heartio_${{ github.event.inputs.version }}_macos
           fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-binary
-          path: app-rust/target/release/heartio_${{ github.event.inputs.version }}*
+          path: heartio_${{ github.event.inputs.version }}*
 
   release:
     needs: build
