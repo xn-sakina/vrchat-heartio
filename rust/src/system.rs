@@ -25,26 +25,10 @@ impl SystemUtils {
                     .arg("-d") // Prevent display sleep
                     .spawn()
                     .context("Failed to start caffeinate command")?;
-                
+
                 self.caffeinate_process = Some(child);
                 tracing::info!("System sleep prevention activated (caffeinate)");
             }
-        }
-
-        #[cfg(target_os = "windows")]
-        {
-            // Use Windows API to prevent system sleep
-            use winapi::um::winbase::{SetThreadExecutionState, ES_CONTINUOUS, ES_SYSTEM_REQUIRED, ES_DISPLAY_REQUIRED};
-            
-            unsafe {
-                SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
-            }
-            tracing::info!("System sleep prevention activated (Windows API)");
-        }
-
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-        {
-            tracing::warn!("System sleep prevention not implemented for this platform");
         }
 
         Ok(())
@@ -56,19 +40,11 @@ impl SystemUtils {
         {
             if let Some(mut child) = self.caffeinate_process.take() {
                 child.kill().context("Failed to kill caffeinate process")?;
-                child.wait().context("Failed to wait for caffeinate process")?;
+                child
+                    .wait()
+                    .context("Failed to wait for caffeinate process")?;
                 tracing::info!("System sleep prevention deactivated");
             }
-        }
-
-        #[cfg(target_os = "windows")]
-        {
-            use winapi::um::winbase::{SetThreadExecutionState, ES_CONTINUOUS};
-            
-            unsafe {
-                SetThreadExecutionState(ES_CONTINUOUS);
-            }
-            tracing::info!("System sleep prevention deactivated (Windows API)");
         }
 
         Ok(())
@@ -79,16 +55,6 @@ impl SystemUtils {
         let os = std::env::consts::OS;
         let arch = std::env::consts::ARCH;
         format!("{}-{}", os, arch)
-    }
-
-    /// Check if running on macOS
-    pub fn is_macos() -> bool {
-        cfg!(target_os = "macos")
-    }
-
-    /// Check if running on Windows
-    pub fn is_windows() -> bool {
-        cfg!(target_os = "windows")
     }
 }
 
