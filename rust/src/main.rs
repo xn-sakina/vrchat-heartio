@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
 
     // Setup signal handlers for graceful shutdown
     let log_sender_signal = log_sender.clone();
-    let mut shutdown_receiver = {
+    let _shutdown_receiver = {
         let (shutdown_sender, shutdown_receiver) = tokio::sync::oneshot::channel();
         tokio::spawn(async move {
             if let Err(e) = signal::ctrl_c().await {
@@ -64,27 +64,20 @@ async fn main() -> Result<()> {
     // Start heart rate monitoring and GUI concurrently
     tracing::info!("Starting HeartIO application...");
     
-    tokio::select! {
-        result = heart_monitor.start() => {
-            if let Err(e) = result {
-                tracing::error!("Heart rate monitor error: {}", e);
-            }
+    // Start heart rate monitor in background task
+    tokio::spawn(async move {
+        if let Err(e) = heart_monitor.start().await {
+            tracing::error!("Heart rate monitor error: {}", e);
         }
-        result = gui::run_gui_app(log_receiver, gui_heart_rate_receiver) => {
-            if let Err(e) = result {
-                tracing::error!("GUI application error: {}", e);
-            }
-        }
-        _ = &mut shutdown_receiver => {
-            tracing::info!("Shutdown signal received");
-        }
+    });
+
+    // Run GUI on main thread (blocking call)
+    if let Err(e) = gui::run_gui_app(log_receiver, gui_heart_rate_receiver).await {
+        tracing::error!("GUI application error: {}", e);
     }
 
     // Graceful shutdown
     tracing::info!("Initiating graceful shutdown...");
-    if let Err(e) = heart_monitor.shutdown().await {
-        tracing::error!("Shutdown error: {}", e);
-    }
 
     tracing::info!("HeartIO application terminated");
     Ok(())
