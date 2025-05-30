@@ -1,0 +1,53 @@
+{
+  "name": "heartio-app-desktop",
+  "version": "1.0.0",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "format": "prettier --write .",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "start": "electron-vite preview",
+    "dev": "electron-vite dev",
+    "build": "npm run typecheck && electron-vite build",
+    "postinstall": "electron-builder install-app-deps",
+    "build:unpack": "npm run build && electron-builder --dir",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "electron-vite build && electron-builder --mac",
+    "build:linux": "electron-vite build && electron-builder --linux"
+  },
+  "dependencies": {
+    "@arco-design/web-react": "^2.66.1",
+    "@electron-toolkit/preload": "^3.0.1",
+    "@electron-toolkit/utils": "^4.0.0",
+    "@tanstack/react-query": "^5.76.2",
+    "clsx": "^2.1.1",
+    "consola": "^3.4.2",
+    "dayjs": "^1.11.13",
+    "electron-store": "^8.2.0",
+    "modern-normalize": "^3.0.1",
+    "sonner": "^2.0.3",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@electron-toolkit/tsconfig": "^1.0.1",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.1.1",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "bochi": "^5.1.0",
+    "electron": "^35.1.5",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^3.1.0",
+    "postcss": "^8.5.3",
+    "prettier": "^3.5.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sass": "^1.89.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.2.6"
+  },
+  "pnpm": {
+    "neverBuiltDependencies": []
+  }
+}

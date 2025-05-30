@@ -1,0 +1,18 @@
+{
+  "name": "heartio-app-apple-watch",
+  "private": true,
+  "scripts": {
+    "sync": "tsx ./scripts/sync.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "bochi": "^5.1.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "zx": "^8.5.3"
+  },
+  "pnpm": {
+    "neverBuiltDependencies": []
+  }
+}
