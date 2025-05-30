@@ -1,9 +1,9 @@
 // GUI application for HeartIO using egui
 use anyhow::Result;
-use eframe::egui;
-use std::sync::mpsc;
-use std::collections::VecDeque;
 use chrono::{DateTime, Local};
+use eframe::egui;
+use std::collections::VecDeque;
+use std::sync::mpsc;
 
 const MAX_LOG_ENTRIES: usize = 1000;
 
@@ -25,9 +25,9 @@ pub enum LogLevel {
 impl LogLevel {
     pub fn color(&self) -> egui::Color32 {
         match self {
-            LogLevel::Info => egui::Color32::from_rgb(70, 130, 180),  // Steel blue
-            LogLevel::Warn => egui::Color32::from_rgb(255, 165, 0),   // Orange
-            LogLevel::Error => egui::Color32::from_rgb(220, 20, 60),  // Crimson
+            LogLevel::Info => egui::Color32::from_rgb(70, 130, 180), // Steel blue
+            LogLevel::Warn => egui::Color32::from_rgb(255, 165, 0),  // Orange
+            LogLevel::Error => egui::Color32::from_rgb(220, 20, 60), // Crimson
             LogLevel::Debug => egui::Color32::from_rgb(128, 128, 128), // Gray
         }
     }
@@ -144,13 +144,14 @@ impl eframe::App for HeartIOApp {
             self.current_heart_rate = Some(heart_rate);
             self.stats.total_heart_rates += 1;
             self.stats.last_heart_rate_time = Some(Local::now());
-            
+
             // Update average (simple running average)
             if self.stats.total_heart_rates == 1 {
                 self.stats.avg_heart_rate = heart_rate as f32;
             } else {
                 let alpha = 0.1; // Smoothing factor
-                self.stats.avg_heart_rate = alpha * heart_rate as f32 + (1.0 - alpha) * self.stats.avg_heart_rate;
+                self.stats.avg_heart_rate =
+                    alpha * heart_rate as f32 + (1.0 - alpha) * self.stats.avg_heart_rate;
             }
         }
 
@@ -158,25 +159,29 @@ impl eframe::App for HeartIOApp {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("HeartIO");
-                
+
                 ui.separator();
-                
+
                 // Current heart rate display
                 if let Some(hr) = self.current_heart_rate {
-                    ui.label(egui::RichText::new(format!("{} BPM", hr))
-                        .size(18.0)
-                        .color(egui::Color32::from_rgb(220, 20, 60)));
+                    ui.label(
+                        egui::RichText::new(format!("{} BPM", hr))
+                            .size(18.0)
+                            .color(egui::Color32::from_rgb(220, 20, 60)),
+                    );
                 } else {
-                    ui.label(egui::RichText::new("-- BPM")
-                        .size(18.0)
-                        .color(egui::Color32::GRAY));
+                    ui.label(
+                        egui::RichText::new("-- BPM")
+                            .size(18.0)
+                            .color(egui::Color32::GRAY),
+                    );
                 }
 
                 ui.separator();
 
                 // Connection status indicators
                 self.draw_connection_status(ui);
-                
+
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.checkbox(&mut self.show_debug, "Show Debug");
                     ui.checkbox(&mut self.auto_scroll, "Auto Scroll");
@@ -218,14 +223,14 @@ impl eframe::App for HeartIOApp {
 
                 ui.separator();
                 ui.heading("Connection");
-                
+
                 self.draw_detailed_connection_status(ui);
             });
 
         // Central panel with logs
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Logs");
-            
+
             egui::ScrollArea::vertical()
                 .auto_shrink([false; 2])
                 .stick_to_bottom(self.auto_scroll)
@@ -240,11 +245,10 @@ impl eframe::App for HeartIOApp {
                             ui.label(
                                 egui::RichText::new(entry.timestamp.format("%H:%M:%S").to_string())
                                     .size(11.0)
-                                    .color(egui::Color32::GRAY)
+                                    .color(egui::Color32::GRAY),
                             );
                             ui.label(
-                                egui::RichText::new(&entry.message)
-                                    .color(entry.level.color())
+                                egui::RichText::new(&entry.message).color(entry.level.color()),
                             );
                         });
                     }
@@ -266,30 +270,28 @@ impl HeartIOApp {
             }
         };
 
-        ui.label(egui::RichText::new("BT")
-            .color(status_color(self.connection_status.bluetooth_connected)));
-        ui.label(egui::RichText::new("OSC")
-            .color(status_color(self.connection_status.osc_connected)));
-        
+        ui.label(
+            egui::RichText::new("BlueTooth")
+                .color(status_color(self.connection_status.bluetooth_connected)),
+        );
+        ui.label(
+            egui::RichText::new("OSC").color(status_color(self.connection_status.osc_connected)),
+        );
+
         if self.connection_status.apple_watch_server_running {
-            ui.label(egui::RichText::new("AW")
-                .color(status_color(true)));
+            ui.label(egui::RichText::new("AW").color(status_color(true)));
         }
     }
 
     fn draw_detailed_connection_status(&self, ui: &mut egui::Ui) {
-        let status_icon = |connected: bool| if connected { "Connected" } else { "Disconnected" };
-        
         ui.horizontal(|ui| {
-            ui.label(status_icon(self.connection_status.bluetooth_connected));
             ui.label("Bluetooth");
         });
-        
+
         ui.horizontal(|ui| {
-            ui.label(status_icon(self.connection_status.osc_connected));
             ui.label("OSC Server");
         });
-        
+
         if self.connection_status.apple_watch_server_running {
             ui.horizontal(|ui| {
                 ui.label("Connected");
@@ -313,7 +315,7 @@ pub async fn run_gui_app(
     };
 
     let app = HeartIOApp::new(log_receiver, heart_rate_receiver);
-    
+
     eframe::run_native(
         "HeartIO - Heart Rate Monitor",
         options,
