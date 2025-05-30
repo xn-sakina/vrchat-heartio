@@ -259,7 +259,7 @@ impl HeartRateMonitor {
                 match osc_client.send_message(&text).await {
                     Ok(_) => {
                         self.last_send_time = now;
-                        self.log_debug(format!("Sent OSC message: {}", text));
+                        self.log_info(format!("Sent OSC message: {}", text));
                     }
                     Err(e) => {
                         self.log_error(format!("Failed to send OSC message: {}", e));
@@ -312,6 +312,7 @@ impl HeartRateMonitor {
         AppStats {
             total_heart_rates: self.heart_rate_count,
             session_duration: self.start_time.elapsed(),
+            session_start_time: Some(self.start_time),
             last_heart_rate_time: self.last_receive_time.map(|_| chrono::Local::now()),
             avg_heart_rate: if self.heart_rate_count > 0 {
                 self.heart_rate_sum as f32 / self.heart_rate_count as f32
