@@ -10,6 +10,23 @@ use uuid::Uuid;
 const HEART_RATE_SERVICE_UUID: Uuid = Uuid::from_u128(0x180D);
 const HEART_RATE_MEASUREMENT_CHAR_UUID: Uuid = Uuid::from_u128(0x2A37);
 
+// Helper function to check if a UUID represents the heart rate service
+fn is_heart_rate_service_uuid(uuid: &Uuid) -> bool {
+    // Convert UUID to 128-bit representation
+    let uuid_bytes = uuid.as_u128();
+    
+    // For 16-bit service UUIDs, they are typically represented as 128-bit UUIDs
+    // with the service ID in the upper 16 bits of the 32-bit service field
+    // Standard Bluetooth UUID format: 0000XXXX-0000-1000-8000-00805F9B34FB
+    // where XXXX is the 16-bit service identifier
+    
+    // Extract the service identifier (bits 96-111, which is the 16-bit service ID)
+    let service_id = ((uuid_bytes >> 96) & 0xFFFF) as u16;
+    
+    // Check if it matches the heart rate service ID (0x180D)
+    service_id == 0x180D
+}
+
 pub struct BluetoothHeartRateMonitor {
     adapter: Adapter,
     device: Option<Peripheral>,
@@ -126,29 +143,40 @@ impl BluetoothHeartRateMonitor {
 
     /// Find any heart rate device
     async fn find_heart_rate_device(&self) -> Result<Peripheral> {
-        let timeout_duration = Duration::from_secs(10);
+        let timeout_duration = Duration::from_secs(30);
         let start_time = std::time::Instant::now();
 
         while start_time.elapsed() < timeout_duration {
             let peripherals = self.adapter.peripherals().await
                 .context("Failed to get peripherals")?;
 
+            tracing::debug!("Scanning {} peripherals...", peripherals.len());
+
             for peripheral in peripherals {
                 if let Ok(Some(properties)) = peripheral.properties().await {
-                    if properties.services.contains(&HEART_RATE_SERVICE_UUID) {
-                        let device_info = properties.local_name
-                            .unwrap_or_else(|| properties.address.to_string());
-                        
-                        tracing::warn!("Found heart rate device: {}", device_info);
-                        tracing::warn!(
-                            "Recommended to set HEART_RATE_DEVICE_NAME or HEART_RATE_DEVICE_ADDRESS for stable connection"
-                        );
-                        return Ok(peripheral);
+                    let device_name = properties.local_name
+                        .as_deref()
+                        .unwrap_or("Unknown");
+                    let device_address = properties.address.to_string();
+                    
+                    tracing::debug!("Device: {} ({})", device_name, device_address);
+                    tracing::debug!("  Services: {:?}", properties.services);
+                    
+                    // Check if any of the advertised services is a heart rate service
+                    for service_uuid in &properties.services {
+                        if is_heart_rate_service_uuid(service_uuid) {
+                            tracing::warn!("Found heart rate device: {} ({})", device_name, device_address);
+                            tracing::warn!("  Heart rate service UUID: {}", service_uuid);
+                            tracing::warn!(
+                                "Recommended to set HEART_RATE_DEVICE_NAME or HEART_RATE_DEVICE_ADDRESS for stable connection"
+                            );
+                            return Ok(peripheral);
+                        }
                     }
                 }
             }
 
-            sleep(Duration::from_millis(500)).await;
+            sleep(Duration::from_millis(1000)).await;
         }
 
         anyhow::bail!("No heart rate device found within timeout");
