@@ -3,7 +3,7 @@ import data from './heart_rate_data.json'
 import * as echarts from 'echarts/core'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState, type CSSProperties } from 'react'
 
 dayjs.extend(utc)
 
@@ -21,6 +21,11 @@ heartData.sort((a, b) => a.time - b.time)
 const seriesData = heartData.map((item) => {
   return [item.time * 1e3, item.bpm]
 })
+
+const isDataEmpty = !seriesData?.length
+if (isDataEmpty) {
+  window.alert(isCN ? `没有心率数据` : `No heart rate data found`)
+}
 
 const getChartTitleTail = () => {
   if (!seriesData?.length) {
@@ -189,6 +194,9 @@ const originOptions = {
         },
         label: { show: false },
         data: (() => {
+          if (!seriesData?.length) {
+            return []
+          }
           const max = seriesData.reduce((a, b) => (b[1] > a[1] ? b : a))
           const min = seriesData.reduce((a, b) => (b[1] < a[1] ? b : a))
           return [
@@ -252,18 +260,24 @@ function App() {
     })
   }
 
+  const styles: CSSProperties = useMemo(() => {
+    return {
+      width: '100%',
+      height: '100vh',
+      padding: 20,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: -30,
+    }
+  }, [])
+
+  if (isDataEmpty) {
+    return <div style={styles}>EMPTY</div>
+  }
+
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100vh',
-        padding: 20,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: -30,
-      }}
-    >
+    <div style={styles}>
       <ReactECharts
         echarts={echarts}
         option={options}
