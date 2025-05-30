@@ -7,24 +7,29 @@ use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
 
-const HEART_RATE_SERVICE_UUID: Uuid = Uuid::from_u128(0x180D);
-const HEART_RATE_MEASUREMENT_CHAR_UUID: Uuid = Uuid::from_u128(0x2A37);
+// Heart Rate Service UUID definitions
+// Short form (16-bit): 0x180D
+const HEART_RATE_SERVICE_UUID_SHORT: u16 = 0x180D;
+
+// Heart Rate Measurement Characteristic UUID definitions
+// Short form (16-bit): 0x2A37
+const HEART_RATE_MEASUREMENT_CHAR_UUID_SHORT: u16 = 0x2A37;
 
 // Helper function to check if a UUID represents the heart rate service
 fn is_heart_rate_service_uuid(uuid: &Uuid) -> bool {
-    // Convert UUID to 128-bit representation
     let uuid_bytes = uuid.as_u128();
-    
-    // For 16-bit service UUIDs, they are typically represented as 128-bit UUIDs
-    // with the service ID in the upper 16 bits of the 32-bit service field
-    // Standard Bluetooth UUID format: 0000XXXX-0000-1000-8000-00805F9B34FB
-    // where XXXX is the 16-bit service identifier
-    
-    // Extract the service identifier (bits 96-111, which is the 16-bit service ID)
+
+    // Extract the 16-bit service identifier
     let service_id = ((uuid_bytes >> 96) & 0xFFFF) as u16;
-    
-    // Check if it matches the heart rate service ID (0x180D)
-    service_id == 0x180D
+    service_id == HEART_RATE_SERVICE_UUID_SHORT
+}
+
+// Helper function to check if a UUID represents the heart rate measurement characteristic
+fn is_heart_rate_measurement_char_uuid(uuid: &Uuid) -> bool {
+    let uuid_bytes = uuid.as_u128();
+
+    let char_id = ((uuid_bytes >> 96) & 0xFFFF) as u16;
+    char_id == HEART_RATE_MEASUREMENT_CHAR_UUID_SHORT
 }
 
 pub struct BluetoothHeartRateMonitor {
@@ -35,17 +40,22 @@ pub struct BluetoothHeartRateMonitor {
 impl BluetoothHeartRateMonitor {
     /// Create a new Bluetooth heart rate monitor
     pub async fn new() -> Result<Self> {
-        let manager = Manager::new().await
+        let manager = Manager::new()
+            .await
             .context("Failed to create Bluetooth manager")?;
-        
-        let adapters = manager.adapters().await
+
+        let adapters = manager
+            .adapters()
+            .await
             .context("Failed to get Bluetooth adapters")?;
-        
-        let adapter = adapters.into_iter().next()
+
+        let adapter = adapters
+            .into_iter()
+            .next()
             .context("No Bluetooth adapter found")?;
-        
+
         tracing::info!("Bluetooth adapter initialized");
-        
+
         Ok(Self {
             adapter,
             device: None,
@@ -53,11 +63,17 @@ impl BluetoothHeartRateMonitor {
     }
 
     /// Start scanning and connect to heart rate device
-    pub async fn connect(&mut self, device_name: Option<&str>, device_address: Option<&str>) -> Result<()> {
+    pub async fn connect(
+        &mut self,
+        device_name: Option<&str>,
+        device_address: Option<&str>,
+    ) -> Result<()> {
         tracing::info!("Starting device discovery...");
-        
+
         // Start scanning
-        self.adapter.start_scan(ScanFilter::default()).await
+        self.adapter
+            .start_scan(ScanFilter::default())
+            .await
             .context("Failed to start Bluetooth scan")?;
 
         let device = if let Some(name) = device_name {
@@ -71,22 +87,28 @@ impl BluetoothHeartRateMonitor {
         };
 
         // Stop scanning
-        self.adapter.stop_scan().await
+        self.adapter
+            .stop_scan()
+            .await
             .context("Failed to stop Bluetooth scan")?;
 
         // Connect to device
-        device.connect().await
+        device
+            .connect()
+            .await
             .context("Failed to connect to heart rate device")?;
 
-        let device_name = device.properties().await
+        let device_name = device
+            .properties()
+            .await
             .ok()
             .flatten()
             .and_then(|p| p.local_name)
             .unwrap_or_else(|| "Unknown".to_string());
-        
+
         tracing::info!("Connected to device: {}", device_name);
         self.device = Some(device);
-        
+
         Ok(())
     }
 
@@ -96,7 +118,10 @@ impl BluetoothHeartRateMonitor {
         let start_time = std::time::Instant::now();
 
         while start_time.elapsed() < timeout_duration {
-            let peripherals = self.adapter.peripherals().await
+            let peripherals = self
+                .adapter
+                .peripherals()
+                .await
                 .context("Failed to get peripherals")?;
 
             for peripheral in peripherals {
@@ -113,7 +138,10 @@ impl BluetoothHeartRateMonitor {
             sleep(Duration::from_millis(500)).await;
         }
 
-        anyhow::bail!("Device with name '{}' not found within timeout", target_name);
+        anyhow::bail!(
+            "Device with name '{}' not found within timeout",
+            target_name
+        );
     }
 
     /// Find device by address
@@ -122,7 +150,10 @@ impl BluetoothHeartRateMonitor {
         let start_time = std::time::Instant::now();
 
         while start_time.elapsed() < timeout_duration {
-            let peripherals = self.adapter.peripherals().await
+            let peripherals = self
+                .adapter
+                .peripherals()
+                .await
                 .context("Failed to get peripherals")?;
 
             for peripheral in peripherals {
@@ -138,7 +169,10 @@ impl BluetoothHeartRateMonitor {
             sleep(Duration::from_millis(500)).await;
         }
 
-        anyhow::bail!("Device with address '{}' not found within timeout", target_address);
+        anyhow::bail!(
+            "Device with address '{}' not found within timeout",
+            target_address
+        );
     }
 
     /// Find any heart rate device
@@ -147,25 +181,30 @@ impl BluetoothHeartRateMonitor {
         let start_time = std::time::Instant::now();
 
         while start_time.elapsed() < timeout_duration {
-            let peripherals = self.adapter.peripherals().await
+            let peripherals = self
+                .adapter
+                .peripherals()
+                .await
                 .context("Failed to get peripherals")?;
 
             tracing::debug!("Scanning {} peripherals...", peripherals.len());
 
             for peripheral in peripherals {
                 if let Ok(Some(properties)) = peripheral.properties().await {
-                    let device_name = properties.local_name
-                        .as_deref()
-                        .unwrap_or("Unknown");
+                    let device_name = properties.local_name.as_deref().unwrap_or("Unknown");
                     let device_address = properties.address.to_string();
-                    
+
                     tracing::debug!("Device: {} ({})", device_name, device_address);
                     tracing::debug!("  Services: {:?}", properties.services);
-                    
+
                     // Check if any of the advertised services is a heart rate service
                     for service_uuid in &properties.services {
                         if is_heart_rate_service_uuid(service_uuid) {
-                            tracing::warn!("Found heart rate device: {} ({})", device_name, device_address);
+                            tracing::warn!(
+                                "Found heart rate device: {} ({})",
+                                device_name,
+                                device_address
+                            );
                             tracing::warn!("  Heart rate service UUID: {}", service_uuid);
                             tracing::warn!(
                                 "Recommended to set HEART_RATE_DEVICE_NAME or HEART_RATE_DEVICE_ADDRESS for stable connection"
@@ -187,34 +226,103 @@ impl BluetoothHeartRateMonitor {
     where
         F: FnMut(u32) + Send + 'static,
     {
-        let device = self.device.as_ref()
-            .context("No device connected")?;
+        let device = self.device.as_ref().context("No device connected")?;
 
-        // Discover services and characteristics
-        device.discover_services().await
-            .context("Failed to discover services")?;
+        tracing::info!("Starting heart rate monitoring...");
+
+        // Wait a bit for the device to stabilize after connection
+        sleep(Duration::from_millis(1000)).await;
+
+        // Discover services and characteristics with retry
+        let mut retry_count = 0;
+        let max_retries = 3;
+
+        while retry_count < max_retries {
+            tracing::info!(
+                "Discovering services (attempt {}/{})",
+                retry_count + 1,
+                max_retries
+            );
+
+            match device.discover_services().await {
+                Ok(_) => {
+                    tracing::info!("Services discovered successfully");
+                    break;
+                }
+                Err(e) => {
+                    retry_count += 1;
+                    if retry_count >= max_retries {
+                        return Err(anyhow::anyhow!(
+                            "Failed to discover services after {} attempts: {}",
+                            max_retries,
+                            e
+                        ));
+                    }
+                    tracing::warn!(
+                        "Service discovery failed (attempt {}), retrying in 2 seconds: {}",
+                        retry_count,
+                        e
+                    );
+                    sleep(Duration::from_millis(2000)).await;
+                }
+            }
+        }
 
         let services = device.services();
-        let heart_rate_service = services.iter()
-            .find(|s| s.uuid == HEART_RATE_SERVICE_UUID)
+        tracing::info!("Found {} services", services.len());
+
+        for service in &services {
+            tracing::debug!(
+                "Service: {} with {} characteristics",
+                service.uuid,
+                service.characteristics.len()
+            );
+            for characteristic in &service.characteristics {
+                tracing::debug!("  Characteristic: {}", characteristic.uuid);
+            }
+        }
+
+        // Find heart rate service using compatibility check
+        let heart_rate_service = services
+            .iter()
+            .find(|s| is_heart_rate_service_uuid(&s.uuid))
             .context("Heart rate service not found")?;
 
-        let heart_rate_char = heart_rate_service.characteristics.iter()
-            .find(|c| c.uuid == HEART_RATE_MEASUREMENT_CHAR_UUID)
+        tracing::info!("Found heart rate service: {}", heart_rate_service.uuid);
+
+        // Find heart rate measurement characteristic using compatibility check
+        let heart_rate_char = heart_rate_service
+            .characteristics
+            .iter()
+            .find(|c| is_heart_rate_measurement_char_uuid(&c.uuid))
             .context("Heart rate measurement characteristic not found")?;
 
+        tracing::info!(
+            "Found heart rate measurement characteristic: {}",
+            heart_rate_char.uuid
+        );
+
         // Subscribe to notifications
-        device.subscribe(heart_rate_char).await
+        device
+            .subscribe(heart_rate_char)
+            .await
             .context("Failed to subscribe to heart rate characteristic")?;
 
-        tracing::info!("Subscribed to heart rate characteristic: {}", heart_rate_char.uuid);
+        tracing::info!(
+            "Subscribed to heart rate characteristic: {}",
+            heart_rate_char.uuid
+        );
 
         // Listen for notifications
-        let mut notification_stream = device.notifications().await
+        let mut notification_stream = device
+            .notifications()
+            .await
             .context("Failed to get notification stream")?;
 
+        tracing::info!("Listening for heart rate notifications...");
+
         while let Some(data) = notification_stream.next().await {
-            if data.uuid == HEART_RATE_MEASUREMENT_CHAR_UUID {
+            if is_heart_rate_measurement_char_uuid(&data.uuid) {
                 if let Some(heart_rate) = Self::parse_heart_rate_data(&data.value) {
                     tracing::debug!("Heart rate: {}", heart_rate);
                     callback(heart_rate);
@@ -258,7 +366,9 @@ impl BluetoothHeartRateMonitor {
     /// Disconnect from device
     pub async fn disconnect(&mut self) -> Result<()> {
         if let Some(device) = &self.device {
-            device.disconnect().await
+            device
+                .disconnect()
+                .await
                 .context("Failed to disconnect from device")?;
             tracing::info!("Disconnected from heart rate device");
         }
