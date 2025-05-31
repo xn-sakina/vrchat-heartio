@@ -125,7 +125,13 @@ impl HeartIOApp {
 }
 
 impl eframe::App for HeartIOApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        // Check if window is being closed
+        if ctx.input(|i| i.viewport().close_requested()) {
+            tracing::info!("Window close requested by user");
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+
         // Process incoming log entries
         while let Ok(entry) = self.log_receiver.try_recv() {
             self.add_log_entry(entry);
