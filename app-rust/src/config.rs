@@ -40,7 +40,7 @@ impl Default for Config {
         ]);
 
         Self {
-            osc_host: "0.0.0.0".to_string(),
+            osc_host: "127.0.0.1".to_string(),
             osc_port: 9000,
             heart_rate_device_name: None,
             heart_rate_device_address: None,
