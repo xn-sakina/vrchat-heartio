@@ -100,15 +100,29 @@ fn init_logging() {
         .init();
 }
 
+fn print_table_row(key: &str, value: &str, total_width: usize) {
+    let prefix = format!("║  {}: ", key);
+    let suffix = " ║";
+    let content = format!("{}{}", prefix, value);
+    let pad_width = if content.len() + suffix.len() > total_width {
+        0
+    } else {
+        total_width - content.len() - suffix.len()
+    };
+    println!("{}{}{}", content, " ".repeat(pad_width), suffix);
+}
+
+const PROJECT_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Print application banner
 fn print_banner() {
+    let platform = system::SystemUtils::get_platform_info();
+
     println!("╔══════════════════════════════════════╗");
     println!("║              HeartIO Rust            ║");
     println!("║        Heart Rate Monitor            ║");
     println!("║                                      ║");
-    println!("║  Platform: {}                ║", 
-        format!("{:>20}", system::SystemUtils::get_platform_info()));
-    println!("║  Version: v0.1.0                     ║");
+    print_table_row("Platform", &platform, 44);
+    println!("║  Version: v{}                     ║", PROJECT_VERSION);
     println!("╚══════════════════════════════════════╝");
     println!();
 }
