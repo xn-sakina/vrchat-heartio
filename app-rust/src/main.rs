@@ -13,7 +13,7 @@ mod system;
 use anyhow::Result;
 use gui::{LogEntry, LogLevel};
 use std::sync::mpsc;
-use tokio::signal::unix;
+use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -37,94 +37,53 @@ async fn main() -> Result<()> {
 
     // Create heart rate monitor
     let mut heart_monitor = heart_rate::HeartRateMonitor::new(
-        config.clone(),
+        config,
         log_sender.clone(),
         gui_heart_rate_sender.clone(),
     );
 
     // Setup signal handlers for graceful shutdown
     let log_sender_signal = log_sender.clone();
-    let (shutdown_sender, shutdown_receiver) = tokio::sync::oneshot::channel();
-    
-    // Handle multiple signals for comprehensive coverage
-    tokio::spawn(async move {
-        let mut sigint = unix::signal(unix::SignalKind::interrupt())
-            .expect("Failed to create SIGINT handler");
-        let mut sigterm = unix::signal(unix::SignalKind::terminate())
-            .expect("Failed to create SIGTERM handler");
-        let mut sigquit = unix::signal(unix::SignalKind::quit())
-            .expect("Failed to create SIGQUIT handler");
-        
-        tokio::select! {
-            _ = sigint.recv() => {
+    let _shutdown_receiver = {
+        let (shutdown_sender, shutdown_receiver) = tokio::sync::oneshot::channel();
+        tokio::spawn(async move {
+            if let Err(e) = signal::ctrl_c().await {
+                tracing::error!("Failed to listen for shutdown signal: {}", e);
+            } else {
                 let _ = log_sender_signal.send(LogEntry {
                     timestamp: chrono::Local::now(),
                     level: LogLevel::Info,
-                    message: "SIGINT (Ctrl+C) received".to_string(),
+                    message: "Shutdown signal received".to_string(),
                 });
+                let _ = shutdown_sender.send(());
             }
-            _ = sigterm.recv() => {
-                let _ = log_sender_signal.send(LogEntry {
-                    timestamp: chrono::Local::now(),
-                    level: LogLevel::Info,
-                    message: "SIGTERM received".to_string(),
-                });
-            }
-            _ = sigquit.recv() => {
-                let _ = log_sender_signal.send(LogEntry {
-                    timestamp: chrono::Local::now(),
-                    level: LogLevel::Info,
-                    message: "SIGQUIT received".to_string(),
-                });
-            }
-        }
-        
-        let _ = shutdown_sender.send(());
-    });
+        });
+        shutdown_receiver
+    };
 
     // Start heart rate monitoring and GUI concurrently
     tracing::info!("Starting HeartIO application...");
     
-    // Create a separate heart monitor instance for shutdown handling
-    let mut heart_monitor_for_shutdown = heart_rate::HeartRateMonitor::new(
-        config,
-        log_sender.clone(),
-        gui_heart_rate_sender.clone(),
-    );
-    
+    // Start heart rate monitor in background task and keep the handle
     let heart_monitor_handle = tokio::spawn(async move {
         if let Err(e) = heart_monitor.start().await {
             tracing::error!("Heart rate monitor error: {}", e);
         }
     });
 
-    // Run GUI on main thread with shutdown handling
-    let gui_result = tokio::select! {
-        result = gui::run_gui_app(log_receiver, gui_heart_rate_receiver) => {
-            tracing::info!("GUI application closed");
-            result
-        }
-        _ = shutdown_receiver => {
-            tracing::info!("Shutdown signal received, terminating GUI");
-            Ok(())
-        }
-    };
+    // Run GUI on main thread (blocking call)
+    let gui_result = gui::run_gui_app(log_receiver, gui_heart_rate_receiver).await;
     
-    // Perform graceful shutdown of heart monitor
-    tracing::info!("Initiating graceful shutdown...");
-    
-    // First try to shutdown gracefully
-    if let Err(e) = heart_monitor_for_shutdown.shutdown().await {
-        tracing::warn!("Error during graceful shutdown: {}", e);
-    }
-    
-    // Then abort the task if it's still running
+    // Wait for heart monitor to complete or abort it
     heart_monitor_handle.abort();
     let _ = heart_monitor_handle.await;
     
     if let Err(e) = gui_result {
         tracing::error!("GUI application error: {}", e);
     }
+
+    // Graceful shutdown
+    tracing::info!("Initiating graceful shutdown...");
 
     tracing::info!("HeartIO application terminated");
     Ok(())
