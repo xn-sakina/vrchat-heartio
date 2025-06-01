@@ -12,7 +12,7 @@ Real-time heart rate monitoring that connects to Bluetooth devices and displays 
 - SQLite data logging for heart rate tracking
 - Web-based graph visualization
 
-**Note**: Xiaomi bands ≥6 are not compatible with this software. Xiaomi bands ≤5 have not been tested.
+**Note**: Xiaomi bands ≥7 are not compatible with this software. Xiaomi bands ≤6 have not been tested.
 
 ## Quick Start (Recommended)
 
