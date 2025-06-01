@@ -32,13 +32,6 @@ fn is_heart_rate_measurement_char_uuid(uuid: &Uuid) -> bool {
     char_id == HEART_RATE_MEASUREMENT_CHAR_UUID_SHORT
 }
 
-fn is_heart_rate_control_char_uuid(uuid: &Uuid) -> bool {
-    // Heart Rate Control Point Characteristic UUID (short form: 0x2A39)
-    let uuid_bytes = uuid.as_u128();
-    let char_id = ((uuid_bytes >> 96) & 0xFFFF) as u16;
-    char_id == 0x2A39
-}
-
 pub struct BluetoothHeartRateMonitor {
     adapter: Adapter,
     device: Option<Peripheral>,
@@ -304,36 +297,10 @@ impl BluetoothHeartRateMonitor {
             .find(|c| is_heart_rate_measurement_char_uuid(&c.uuid))
             .context("Heart rate measurement characteristic not found")?;
 
-        let heart_rate_control_char = heart_rate_service
-            .characteristics
-            .iter()
-            .find(|c| is_heart_rate_control_char_uuid(&c.uuid));
-
         tracing::info!(
             "Found heart rate measurement characteristic: {}",
             heart_rate_char.uuid
         );
-
-        if heart_rate_control_char.is_some() {
-            tracing::info!(
-                "Found heart rate control characteristic: {}",
-                heart_rate_control_char.unwrap().uuid
-            );
-
-            // send start message
-            // \x15\x01\x01
-            let start_command = [0x15, 0x01, 0x01];
-            device
-                .write(
-                    heart_rate_control_char.unwrap(),
-                    &start_command,
-                    btleplug::api::WriteType::WithResponse,
-                )
-                .await
-                .context("Failed to write start command to heart rate control characteristic")?;
-        } else {
-            // cannot control heart rate monitor
-        }
 
         // Subscribe to notifications
         device
