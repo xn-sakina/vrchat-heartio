@@ -1817,7 +1817,7 @@ dependencies = [
 
 [[package]]
 name = "heartio-rust"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1829,6 +1829,7 @@ dependencies = [
  "egui",
  "futures",
  "lazy_static",
+ "libc",
  "rand",
  "rosc",
  "serde",

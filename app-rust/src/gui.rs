@@ -125,11 +125,18 @@ impl HeartIOApp {
 }
 
 impl eframe::App for HeartIOApp {
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        tracing::info!("Application exiting - performing final cleanup");
+        crate::system::SystemUtils::immediate_cleanup();
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Handle window close events (including cmd+q on macOS)
         if ctx.input(|i| i.viewport().close_requested()) {
-            tracing::info!("GUI close requested by user");
-            // The frame will automatically close, we just log it
+            tracing::info!("GUI close requested by user - performing immediate cleanup");
+            
+            // Perform immediate synchronous cleanup before the application exits
+            crate::system::SystemUtils::immediate_cleanup();
         }
 
         // Process incoming log entries

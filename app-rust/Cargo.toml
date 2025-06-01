@@ -27,6 +27,7 @@ dirs = "5.0"
 futures = "0.3"
 thiserror = "1.0"
 lazy_static = "1.4"
+libc = "0.2"
 
 # GUI dependencies
 eframe = "0.29"
