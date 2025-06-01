@@ -81,8 +81,7 @@ impl BluetoothHeartRateMonitor {
         } else if let Some(address) = device_address {
             self.find_device_by_address(address).await?
         } else {
-            tracing::warn!("No device name or address provided, using guess mode");
-            tracing::info!("Searching for heart rate devices...");
+            tracing::warn!("No device name or address provided, using auto-detection");
             self.find_heart_rate_device().await?
         };
 
@@ -114,8 +113,10 @@ impl BluetoothHeartRateMonitor {
 
     /// Find device by name
     async fn find_device_by_name(&self, target_name: &str) -> Result<Peripheral> {
-        let timeout_duration = Duration::from_secs(10);
+        let timeout_duration = Duration::from_secs(15);
         let start_time = std::time::Instant::now();
+
+        tracing::info!("Searching for device: '{}'", target_name);
 
         while start_time.elapsed() < timeout_duration {
             let peripherals = self
@@ -139,15 +140,17 @@ impl BluetoothHeartRateMonitor {
         }
 
         anyhow::bail!(
-            "Device with name '{}' not found within timeout",
+            "Device '{}' not found. Please ensure the device is powered on and heart rate broadcasting is enabled. Also check that the device is not connected to other applications.",
             target_name
         );
     }
 
     /// Find device by address
     async fn find_device_by_address(&self, target_address: &str) -> Result<Peripheral> {
-        let timeout_duration = Duration::from_secs(10);
+        let timeout_duration = Duration::from_secs(15);
         let start_time = std::time::Instant::now();
+
+        tracing::info!("Searching for device with address: {}", target_address);
 
         while start_time.elapsed() < timeout_duration {
             let peripherals = self
@@ -170,7 +173,7 @@ impl BluetoothHeartRateMonitor {
         }
 
         anyhow::bail!(
-            "Device with address '{}' not found within timeout",
+            "Device with address '{}' not found. Please ensure the device is powered on and heart rate broadcasting is enabled. Also check that the device is not connected to other applications.",
             target_address
         );
     }
@@ -180,6 +183,8 @@ impl BluetoothHeartRateMonitor {
         let timeout_duration = Duration::from_secs(30);
         let start_time = std::time::Instant::now();
 
+        tracing::info!("Auto-detecting heart rate devices...");
+        
         while start_time.elapsed() < timeout_duration {
             let peripherals = self
                 .adapter
@@ -200,14 +205,13 @@ impl BluetoothHeartRateMonitor {
                     // Check if any of the advertised services is a heart rate service
                     for service_uuid in &properties.services {
                         if is_heart_rate_service_uuid(service_uuid) {
-                            tracing::warn!(
+                            tracing::info!(
                                 "Found heart rate device: {} ({})",
                                 device_name,
                                 device_address
                             );
-                            tracing::warn!("  Heart rate service UUID: {}", service_uuid);
                             tracing::warn!(
-                                "Recommended to set HEART_RATE_DEVICE_NAME or HEART_RATE_DEVICE_ADDRESS for stable connection"
+                                "Auto-detection mode is not recommended. Set HEART_RATE_DEVICE_NAME or HEART_RATE_DEVICE_ADDRESS for stable connection"
                             );
                             return Ok(peripheral);
                         }
@@ -218,7 +222,7 @@ impl BluetoothHeartRateMonitor {
             sleep(Duration::from_millis(1000)).await;
         }
 
-        anyhow::bail!("No heart rate device found within timeout");
+        anyhow::bail!("No heart rate device found within 30 seconds. Please ensure your heart rate device is broadcasting heart rate data. Also check that the device is not connected to other applications.");
     }
 
     /// Start monitoring heart rate data

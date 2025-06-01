@@ -279,14 +279,9 @@ impl HeartRateMonitor {
         
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(5));
-            let _timeout_duration = Duration::from_secs(20);
             
             loop {
                 interval.tick().await;
-                
-                // This is a simplified timeout checker
-                // In a real implementation, you'd want to share the last_receive_time
-                // using Arc<Mutex<Option<Instant>>> or similar
                 
                 let _ = log_sender.send(LogEntry {
                     timestamp: chrono::Local::now(),
