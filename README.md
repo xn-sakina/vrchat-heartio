@@ -6,11 +6,13 @@ Real-time heart rate monitoring that connects to Bluetooth devices and displays 
 
 - Connect to BLE heart rate devices:
   - Heart rate monitors: Polar, CooSpo, Garmin, etc.
-  - Smart wearables with BLE heart rate broadcast: Huawei bands, Xiaomi bands (≤ 7), etc.
+  - Smart wearables with BLE heart rate broadcast: Huawei bands, etc.
 - Display heart rate in VRChat via OSC protocol
 - Dynamic heart display styles based on BPM
-- SQLite data logging for tracking heart rate over time
-- Web-based graph visualization for heart rate data
+- SQLite data logging for heart rate tracking
+- Web-based graph visualization
+
+**Note**: Xiaomi bands ≥6 are not compatible with this software. Xiaomi bands ≤5 have not been tested.
 
 ## Quick Start (Recommended)
 
@@ -67,7 +69,7 @@ Start the Node.js CLI:
 
 ## Graph Visualization
 
-View heart rate data in a web-based graph interface:
+View heart rate data in a web interface:
 
 ```bash
   just start-graph
