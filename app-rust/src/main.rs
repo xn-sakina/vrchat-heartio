@@ -149,7 +149,7 @@ fn print_banner() {
     println!("║        Heart Rate Monitor            ║");
     println!("║                                      ║");
     print_table_row("Platform", &platform, 44);
-    println!("║  Version : v{}                     ║", PROJECT_VERSION);
+    println!("║  Version : v{}                    ║", PROJECT_VERSION);
     println!("╚══════════════════════════════════════╝");
     println!();
 }
