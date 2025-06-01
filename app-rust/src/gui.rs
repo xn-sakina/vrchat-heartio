@@ -126,6 +126,12 @@ impl HeartIOApp {
 
 impl eframe::App for HeartIOApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Handle window close events (including cmd+q on macOS)
+        if ctx.input(|i| i.viewport().close_requested()) {
+            tracing::info!("GUI close requested by user");
+            // The frame will automatically close, we just log it
+        }
+
         // Process incoming log entries
         while let Ok(entry) = self.log_receiver.try_recv() {
             self.add_log_entry(entry);

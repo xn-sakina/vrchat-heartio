@@ -1,6 +1,6 @@
 [package]
 name = "heartio-rust"
-version = "0.2.0"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
@@ -26,6 +26,7 @@ rand = "0.8"
 dirs = "5.0"
 futures = "0.3"
 thiserror = "1.0"
+lazy_static = "1.4"
 
 # GUI dependencies
 eframe = "0.29"

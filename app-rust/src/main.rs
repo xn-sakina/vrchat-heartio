@@ -8,12 +8,13 @@ mod gui;
 mod heart_rate;
 mod osc;
 mod server;
+mod signals;
 mod system;
 
 use anyhow::Result;
 use gui::{LogEntry, LogLevel};
-use std::sync::mpsc;
-use tokio::signal;
+use std::sync::{mpsc, Arc};
+use tokio::sync::{Mutex, oneshot};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -35,48 +36,74 @@ async fn main() -> Result<()> {
     // Send initial log entries
     send_initial_logs(&log_sender);
 
-    // Create heart rate monitor
-    let mut heart_monitor = heart_rate::HeartRateMonitor::new(
+    // Create heart rate monitor with Arc for sharing between tasks
+    let heart_monitor = Arc::new(Mutex::new(heart_rate::HeartRateMonitor::new(
         config,
         log_sender.clone(),
         gui_heart_rate_sender.clone(),
-    );
+    )));
 
-    // Setup signal handlers for graceful shutdown
+    // Setup comprehensive signal handlers for graceful shutdown
     let log_sender_signal = log_sender.clone();
-    let _shutdown_receiver = {
-        let (shutdown_sender, shutdown_receiver) = tokio::sync::oneshot::channel();
-        tokio::spawn(async move {
-            if let Err(e) = signal::ctrl_c().await {
-                tracing::error!("Failed to listen for shutdown signal: {}", e);
-            } else {
-                let _ = log_sender_signal.send(LogEntry {
-                    timestamp: chrono::Local::now(),
-                    level: LogLevel::Info,
-                    message: "Shutdown signal received".to_string(),
-                });
-                let _ = shutdown_sender.send(());
-            }
-        });
-        shutdown_receiver
-    };
-
-    // Start heart rate monitoring and GUI concurrently
-    tracing::info!("Starting HeartIO application...");
+    let heart_monitor_signal = Arc::clone(&heart_monitor);
+    let (shutdown_sender, shutdown_receiver) = oneshot::channel();
     
-    // Start heart rate monitor in background task and keep the handle
+    // Handle multiple shutdown signals
+    tokio::spawn(async move {
+        if let Err(e) = signals::wait_for_shutdown_signal().await {
+            tracing::error!("Error setting up signal handlers: {}", e);
+        }
+        
+        let _ = log_sender_signal.send(LogEntry {
+            timestamp: chrono::Local::now(),
+            level: LogLevel::Info,
+            message: "Shutdown signal received, cleaning up...".to_string(),
+        });
+        
+        // Perform cleanup
+        {
+            let mut monitor = heart_monitor_signal.lock().await;
+            if let Err(e) = monitor.shutdown().await {
+                tracing::error!("Error during shutdown: {}", e);
+            }
+        }
+        
+        let _ = shutdown_sender.send(());
+    });
+
+    // Start heart rate monitoring in background task
+    let heart_monitor_clone = Arc::clone(&heart_monitor);
     let heart_monitor_handle = tokio::spawn(async move {
-        if let Err(e) = heart_monitor.start().await {
-            tracing::error!("Heart rate monitor error: {}", e);
+        {
+            let mut monitor = heart_monitor_clone.lock().await;
+            if let Err(e) = monitor.start().await {
+                tracing::error!("Heart rate monitor error: {}", e);
+            }
         }
     });
 
-    // Run GUI on main thread (blocking call)
-    let gui_result = gui::run_gui_app(log_receiver, gui_heart_rate_receiver).await;
+    tracing::info!("Starting HeartIO application...");
+
+    // Run GUI on main thread (blocking call) with graceful shutdown handling
+    let gui_result = tokio::select! {
+        result = gui::run_gui_app(log_receiver, gui_heart_rate_receiver) => result,
+        _ = shutdown_receiver => {
+            tracing::info!("Shutdown signal received during GUI execution");
+            Ok(())
+        }
+    };
     
-    // Wait for heart monitor to complete or abort it
+    // Abort heart monitor task and perform cleanup
     heart_monitor_handle.abort();
     let _ = heart_monitor_handle.await;
+    
+    // Final cleanup - ensure resources are freed
+    {
+        let mut monitor = heart_monitor.lock().await;
+        if let Err(e) = monitor.shutdown().await {
+            tracing::error!("Error during final cleanup: {}", e);
+        }
+    }
     
     if let Err(e) = gui_result {
         tracing::error!("GUI application error: {}", e);
