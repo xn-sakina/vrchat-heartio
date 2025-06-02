@@ -19,6 +19,7 @@ install-android:
 # Build Android APP
 build-andriod:
 	cd ./{{app_android_dir}} && pnpm prebuild:android && cd ./andriod && ./gradlew assembleRelease
+	cd ./{{app_android_dir}} && pnpm post:build
 
 # Build Rust APP for MacOS
 build-macos:
