@@ -7,7 +7,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { requestPermissions } from '@/utils/ble-permission'
 import { toast } from 'sonner-native'
 import { Device, BleManager, Subscription } from 'react-native-ble-plx'
@@ -85,6 +85,9 @@ export default function Home() {
   // input
   const [ipConfig, setIpConfig] = useState('')
 
+  // api error
+  const apiErrorCountRef = useRef(0)
+
   // config
   const loadConfig = async () => {
     const config = (await Storage.loadData()) as IConfig | undefined
@@ -118,6 +121,17 @@ export default function Home() {
     func()
   }, [])
 
+  // api error count
+  const getApiErrorCount = () => {
+    return apiErrorCountRef.current
+  }
+  const plusApiErrorCount = () => {
+    apiErrorCountRef.current += 1
+  }
+  const resetApiErrorCount = () => {
+    apiErrorCountRef.current = 0
+  }
+
   const sendToServer = async (data: { bpm: number }) => {
     if (!ipConfig?.length || !ipConfig?.trim()?.length) {
       toast.error(`Please input your PC internal network IP`, {
@@ -130,6 +144,24 @@ export default function Home() {
       }
       return
     }
+    if (!data?.bpm || data.bpm <= 0) {
+      toast.error(`Invalid BPM value: ${data.bpm}`, {
+        duration: 2 * 1e3,
+      })
+      return
+    }
+    if (!device) {
+      toast.error(`No device connected`, {
+        duration: 2 * 1e3,
+      })
+      return
+    }
+    // limit
+    const apiErrorCount = getApiErrorCount()
+    if (apiErrorCount > 20) {
+      return
+    }
+
     const trimmedIP = ipConfig.trim()
     const url = `http://${trimmedIP}:2333/heart?bpm=${data.bpm}`
     // send
@@ -145,6 +177,22 @@ export default function Home() {
       toast.error(`Error sending data to server: ${error.message}`, {
         duration: 1 * 1e3,
       })
+
+      // plus
+      plusApiErrorCount()
+
+      // limit
+      const errorCount = getApiErrorCount()
+      if (errorCount > 20) {
+        toast.error(
+          `API error count exceeded, please check your server or network`,
+          {
+            duration: 5 * 1e3,
+          },
+        )
+        // cleanup
+        cleanup()
+      }
     }
   }
 
@@ -312,6 +360,9 @@ export default function Home() {
 
     // clear current BPM
     setCurrentBPM('')
+
+    // reset api error count
+    resetApiErrorCount()
   }
 
   const scanDevices = async () => {
@@ -400,16 +451,6 @@ export default function Home() {
         })
       }
       await getDevices()
-
-      // if (process.env.NODE_ENV === 'development') {
-      // setAllDevices(
-      //   Array(20).fill({
-      //     name: 'Test Device',
-      //     id: '1234567890',
-      //     serviceUUIDs: [HEART_RATE_SERVICE_UUID],
-      //   }),
-      // )
-      // }
     } finally {
     }
   }
