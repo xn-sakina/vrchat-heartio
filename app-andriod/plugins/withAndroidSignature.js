@@ -27,7 +27,16 @@ function setAndroidSignature(appBuildGradle) {
 
   let output = appBuildGradle.replace(
     /(signingConfigs\s*\{)/,
-    `$1
+    `
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a', 'arm64-v8a'
+            universalApk false
+        }
+    }
+    $1
         release {
             storeFile file(${JSON.stringify(
               path.resolve(

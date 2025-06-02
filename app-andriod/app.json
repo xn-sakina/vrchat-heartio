@@ -3,6 +3,8 @@
     "name": "Heartio",
     "slug": "heartio-andriod",
     "version": "1.10.0",
+    "runtimeVersion": "1.10.0",
+    "jsEngine": "hermes",
     "orientation": "portrait",
     "icon": "./src/assets/images/icon.png",
     "scheme": "appandriod",
