@@ -544,7 +544,7 @@ export default function Home() {
                   value={ipConfig}
                   onChangeText={(text) => setIpConfig(text)}
                   style={styles.input}
-                  placeholder="192.168.0.120"
+                  placeholder="192.168.1.120"
                 />
               </View>
               <View style={styles.btn}>
