@@ -297,9 +297,11 @@ export default function Home() {
     })
   }
 
-  const scanDevices = async () => {
-    // clear
+  const cleanup = () => {
+    // clear all devices
     setAllDevices([])
+
+    // cleanup device and subscription
     setDevice(undefined)
     setSubUUID(undefined)
     // stop sub
@@ -307,7 +309,14 @@ export default function Home() {
       subscription.remove()
     }
     setSubscription(undefined)
+
+    // clear current BPM
     setCurrentBPM('')
+  }
+
+  const scanDevices = async () => {
+    // clear
+    cleanup()
 
     // start scanning
     setIsScanning(true)
