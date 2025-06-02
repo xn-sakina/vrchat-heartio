@@ -12,8 +12,6 @@ Real-time heart rate monitoring that connects to Bluetooth devices and displays 
 - SQLite data logging for heart rate tracking
 - Web-based graph visualization
 
-**Note**: Xiaomi bands ≥7 are not compatible with this software. Xiaomi bands ≤6 have not been tested.
-
 ## Quick Start (Recommended)
 
 For users who prefer a simple setup without development environment, download the pre-built Rust binary from [GitHub Releases](https://github.com/xn-sakina/vrchat-heartio/releases).
@@ -30,6 +28,14 @@ The Rust version provides the same functionality as the Node.js CLI in a single 
     "80": [],
   }
 ```
+
+#### Xiaomi Band Support
+
+Xiaomi bands have limited compatibility:
+- **Xiaomi Band ≤7**: Supported via Bluetooth broadcast
+- **Xiaomi Band ≥8**: Not supported (no Bluetooth broadcast capability)
+
+For Xiaomi Band 6/7 users, detailed setup in the [Heartio Android App](./app-andriod/README.md).
 
 ## Node.js CLI Version
 

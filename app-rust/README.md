@@ -1,4 +1,4 @@
-# heartio-rust
+# HeartIO Desktop App
 
 ## Project Overview
 

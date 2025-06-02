@@ -38,3 +38,4 @@ app-example
 /node_modules
 /credentials.json
 /credential
+/prompts
