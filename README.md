@@ -90,7 +90,7 @@ View heart rate data in a web interface:
 
 ## Development Notes
 
-All code except the Node.js CLI was generated through vibe coding:
+- **Node.js CLI**、**Andriod App**: Not by AI
 - **Apple Watch App**、**Graph Visualization**: Created with GPT-4o
 - **Rust Version**: Claude Sonnet 4
 
