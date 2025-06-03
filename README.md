@@ -32,10 +32,8 @@ The Rust version provides the same functionality as the Node.js CLI in a single 
 #### Xiaomi Band Support
 
 Xiaomi bands have limited compatibility:
-- **Xiaomi Band ≤7**: Supported via Bluetooth broadcast
-- **Xiaomi Band ≥8**: Not supported (no Bluetooth broadcast capability)
-
-For Xiaomi Band 6/7 users, detailed setup in the [Heartio Android App](./app-andriod/README.md).
+- **Xiaomi Band ≤5**: Supported via Bluetooth broadcast
+- **Xiaomi Band ≥6**: Not supported
 
 ## Node.js CLI Version
 
@@ -90,7 +88,7 @@ View heart rate data in a web interface:
 
 ## Development Notes
 
-- **Node.js CLI**、**Andriod App**: Not by AI
+- **Node.js CLI**: Not by AI
 - **Apple Watch App**、**Graph Visualization**: Created with GPT-4o
 - **Rust Version**: Claude Sonnet 4
 
