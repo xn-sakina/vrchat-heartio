@@ -17,10 +17,12 @@ jobs:
       matrix:
         include:
           - os: macos-latest
+            target: macos
             build_command: just build-python
             binary_path: app-python/dist/main
             artifact_name: heartio_xiaomi_band_reporter_${{ github.event.inputs.version }}_macos
           - os: windows-latest
+            target: windows
             build_command: just build-python
             binary_path: app-python/dist/main.exe
             artifact_name: heartio_xiaomi_band_reporter_${{ github.event.inputs.version }}.exe
