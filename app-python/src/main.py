@@ -16,13 +16,13 @@ def send_to_osc(bpm: int):
         try:
             response = requests.get(url)
             if response.status_code == 200:
-                print(f"Sent BPM {bpm} to OSC server successfully.")
+                print(f"Successfully sent BPM {bpm} to HeartIO main program.")
             else:
                 print(
                     f"Failed to send BPM {bpm}. Server responded with status code {response.status_code}."
                 )
         except requests.RequestException as e:
-            print(f"Error sending BPM {bpm}: {e}")
+            print(f"Error sending BPM {bpm} to HeartIO: {e}")
 
 
 def handle_advertisement(device, advertisement_data):
@@ -38,7 +38,7 @@ def handle_advertisement(device, advertisement_data):
             for _, value in mdata.items():
                 if len(value) >= 4:
                     heart_rate = value[3]
-                    print(f"[{device.address}] Heart rate: {heart_rate} bpm")
+                    print(f"[{device.address}] Received heart rate: {heart_rate} bpm")
                     send_to_osc(heart_rate)
                 else:
                     print(f"[{device.address}] Manufacturer data too short: {value}")
@@ -63,6 +63,17 @@ async def check_bluetooth_availability():
 
 
 async def main():
+    print("=" * 60)
+    print("HeartIO Python Reporter - Xiaomi Band Broadcaster")
+    print("=" * 60)
+    print("This is a reporter program that forwards Xiaomi band heart rate")
+    print("broadcast data to the HeartIO main program.")
+    print("")
+    print("IMPORTANT: You must enable APPLE_WATCH: true in heartio.config.json")
+    print("This program is specifically designed for Xiaomi bands only.")
+    print("=" * 60)
+    print("")
+    
     print("Checking Bluetooth availability...")
     
     # Check if Bluetooth is available before proceeding
@@ -75,7 +86,7 @@ async def main():
     try:
         scanner = BleakScanner(detection_callback=handle_advertisement)
         await scanner.start()
-        print("Scanner started.")
+        print("Scanner started. Waiting for Xiaomi band broadcasts...")
         try:
             await stop_scanning.wait()
         finally:

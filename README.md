@@ -29,11 +29,16 @@ The Rust version provides the same functionality as the Node.js CLI in a single 
   }
 ```
 
-#### Xiaomi Band Support
+## Device Compatibility
 
-Xiaomi bands have limited compatibility:
-- **Xiaomi Band ≤5**: Supported via Bluetooth broadcast
-- **Xiaomi Band ≥6**: Not supported
+This project supports devices that follow international Bluetooth heart rate standards, including:
+- Smart wearables with standard BLE heart rate broadcast: Huawei bands, etc.
+- Heart rate monitors: Polar, CooSpo, Garmin, etc.
+
+For Xiaomi bands:
+- **Xiaomi Band ≥8**: Not supported
+- **Xiaomi Band ≤5**: Not tested
+- **Xiaomi Band 6 & 7**: Can be supported through a broadcaster that forwards heart rate data, see [Heartio Xiaomi Band Reporter](./app-python/README.md)
 
 ## Node.js CLI Version
 
