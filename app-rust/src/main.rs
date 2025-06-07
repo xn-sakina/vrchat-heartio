@@ -10,6 +10,7 @@ mod osc;
 mod server;
 mod signals;
 mod system;
+mod xiaomi_band;
 
 use anyhow::Result;
 use gui::{LogEntry, LogLevel};

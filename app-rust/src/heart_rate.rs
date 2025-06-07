@@ -12,12 +12,14 @@ use crate::gui::{LogEntry, LogLevel, ConnectionStatus, AppStats};
 use crate::osc::OscClient;
 use crate::server::AppleWatchServer;
 use crate::system::SystemUtils;
+use crate::xiaomi_band::XiaomiBandMonitor;
 
 pub struct HeartRateMonitor {
     config: Config,
     database: Option<Database>,
     osc_client: Option<OscClient>,
     bluetooth_monitor: Option<BluetoothHeartRateMonitor>,
+    xiaomi_band_monitor: Option<XiaomiBandMonitor>,
     system_utils: SystemUtils,
     log_sender: mpsc::Sender<LogEntry>,
     gui_heart_rate_sender: mpsc::Sender<u32>,
@@ -40,6 +42,7 @@ impl HeartRateMonitor {
             database: None,
             osc_client: None,
             bluetooth_monitor: None,
+            xiaomi_band_monitor: None,
             system_utils: SystemUtils::new(),
             log_sender,
             gui_heart_rate_sender,
@@ -65,7 +68,9 @@ impl HeartRateMonitor {
         self.keep_system_awake()?;
 
         // Start monitoring based on configuration
-        if self.config.apple_watch {
+        if self.config.xiaomi_band {
+            self.start_xiaomi_band_mode().await?;
+        } else if self.config.apple_watch {
             self.start_apple_watch_mode().await?;
         } else {
             self.start_bluetooth_mode().await?;
@@ -220,6 +225,53 @@ impl HeartRateMonitor {
         Ok(())
     }
 
+    /// Start Xiaomi Band monitoring mode
+    async fn start_xiaomi_band_mode(&mut self) -> Result<()> {
+        self.log_info("Starting Xiaomi Band monitoring mode...".to_string());
+        self.log_info("Listening for Xiaomi Smart Band advertisements...".to_string());
+
+        let (heart_rate_sender, mut heart_rate_receiver) = tokio_mpsc::unbounded_channel();
+        
+        // Create Xiaomi Band monitor
+        let mut xiaomi_monitor = XiaomiBandMonitor::new(heart_rate_sender).await?;
+        
+        // Start monitoring in a separate task
+        let mut monitoring_task = tokio::spawn(async move {
+            if let Err(e) = xiaomi_monitor.start_monitoring().await {
+                tracing::error!("Xiaomi Band monitoring error: {}", e);
+            }
+        });
+
+        self.log_info("Xiaomi Band monitor started. Waiting for advertisements...".to_string());
+
+        // Start timeout checker
+        let mut timeout_task = self.start_timeout_checker().await;
+
+        // Process heart rate data
+        loop {
+            tokio::select! {
+                heart_rate = heart_rate_receiver.recv() => {
+                    if let Some(heart_rate) = heart_rate {
+                        self.process_heart_rate(heart_rate).await?;
+                    } else {
+                        // Channel closed, break the loop
+                        break;
+                    }
+                }
+                _ = &mut timeout_task => {
+                    self.log_error("Timeout checker completed".to_string());
+                    break;
+                }
+                _ = &mut monitoring_task => {
+                    self.log_error("Xiaomi Band monitor stopped".to_string());
+                    break;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     /// Process incoming heart rate data
     async fn process_heart_rate(&mut self, heart_rate: u32) -> Result<()> {
         self.last_receive_time = Some(Instant::now());
@@ -298,7 +350,7 @@ impl HeartRateMonitor {
             bluetooth_connected: self.bluetooth_monitor.is_some(),
             osc_connected: self.osc_client.is_some(),
             database_connected: self.database.is_some(),
-            apple_watch_server_running: self.config.apple_watch,
+            apple_watch_server_running: self.config.apple_watch || self.config.xiaomi_band,
         }
     }
 
@@ -330,6 +382,13 @@ impl HeartRateMonitor {
         if let Some(mut bluetooth_monitor) = self.bluetooth_monitor.take() {
             if let Err(e) = bluetooth_monitor.disconnect().await {
                 self.log_warn(format!("Failed to disconnect Bluetooth device: {}", e));
+            }
+        }
+
+        // Stop Xiaomi Band monitor
+        if let Some(mut xiaomi_monitor) = self.xiaomi_band_monitor.take() {
+            if let Err(e) = xiaomi_monitor.stop().await {
+                self.log_warn(format!("Failed to stop Xiaomi Band monitor: {}", e));
             }
         }
 
