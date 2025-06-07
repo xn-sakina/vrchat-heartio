@@ -30,7 +30,3 @@ start-graph:
 	{{python_cmd}} ./scripts/export.py && \
 	pnpm dev
 	
-# Build Python APP
-build-python:
-	cd ./{{app_python_dir}} && \
-	pyinstaller --onefile --strip --clean ./src/main.py
