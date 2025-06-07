@@ -2,6 +2,7 @@ cli_dir := "cli"
 cli_graph_dir := "cli-graph"
 app_apple_watch_dir := "app-apple-watch"
 app_rust_dir := "app-rust"
+app_python_dir := "app-python"
 
 python_cmd := `which python || which python3`
 
@@ -29,3 +30,7 @@ start-graph:
 	{{python_cmd}} ./scripts/export.py && \
 	pnpm dev
 	
+# Build Python APP
+build-python:
+	cd ./{{app_python_dir}} && \
+	pyinstaller --onefile --strip --clean ./src/main.py

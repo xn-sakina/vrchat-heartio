@@ -1,0 +1,59 @@
+name: Release Python
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g.: v1, v2)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            build_command: just build-python
+            binary_path: app-python/dist/main
+            artifact_name: heartio_xiaomi_band_reporter_${{ github.event.inputs.version }}_macos
+          - os: windows-latest
+            build_command: just build-python
+            binary_path: app-python/dist/main.exe
+            artifact_name: heartio_xiaomi_band_reporter_${{ github.event.inputs.version }}.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup just
+        uses: extractions/setup-just@v1
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: cd app-python && pip install -r requirements.txt && pip install pyinstaller
+
+      - name: Build binary
+        run: |
+          ${{ matrix.build_command }}
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          echo ${{ matrix.artifact_name }}
+          cp ${{ matrix.binary_path }} ${{ matrix.artifact_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}-python-binary
+          path: heartio_xiaomi_band_reporter_*
