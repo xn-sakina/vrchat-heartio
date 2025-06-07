@@ -1,8 +1,10 @@
 import asyncio
 import signal
 from bleak import BleakScanner
+from bleak.exc import BleakError
 import time
 import requests
+import sys
 
 stop_scanning = asyncio.Event()
 last_seen = {}
@@ -44,17 +46,49 @@ def handle_advertisement(device, advertisement_data):
             print(f"[{device.address}] No manufacturer data in advertisement")
 
 
-async def main():
-    print("Listening for Xiaomi Smart Band advertisements...")
-    scanner = BleakScanner(detection_callback=handle_advertisement)
-    await scanner.start()
-    print("Scanner started.")
+async def check_bluetooth_availability():
+    """Check if Bluetooth is available and enabled"""
     try:
-        await stop_scanning.wait()
-    finally:
-        print("Stopping scanner...")
-        await scanner.stop()
-        print("Scanner stopped.")
+        # Try to create a scanner to test Bluetooth availability
+        test_scanner = BleakScanner()
+        await test_scanner.start()
+        await test_scanner.stop()
+        return True
+    except BleakError as e:
+        print(f"Bluetooth error: {e}")
+        return False
+    except Exception as e:
+        print(f"Error checking Bluetooth availability: {e}")
+        return False
+
+
+async def main():
+    print("Checking Bluetooth availability...")
+    
+    # Check if Bluetooth is available before proceeding
+    if not await check_bluetooth_availability():
+        print("Error: Bluetooth is not available or disabled. Please enable Bluetooth and try again.")
+        sys.exit(1)
+    
+    print("Listening for Xiaomi Smart Band advertisements...")
+    
+    try:
+        scanner = BleakScanner(detection_callback=handle_advertisement)
+        await scanner.start()
+        print("Scanner started.")
+        try:
+            await stop_scanning.wait()
+        finally:
+            print("Stopping scanner...")
+            await scanner.stop()
+            print("Scanner stopped.")
+    except BleakError as e:
+        print(f"Bluetooth scanner error: {e}")
+        print("Please check if Bluetooth is enabled and try again.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        sys.exit(1)
 
 
 def shutdown():
@@ -72,6 +106,11 @@ if __name__ == "__main__":
 
     try:
         loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        print("Program interrupted by user.")
+    except Exception as e:
+        print(f"Program failed with error: {e}")
+        sys.exit(1)
     finally:
         loop.close()
         print("Program exited.")
