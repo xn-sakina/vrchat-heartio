@@ -17,7 +17,7 @@ pub struct Config {
     #[serde(rename = "APPLE_WATCH")]
     pub apple_watch: bool,
     #[serde(rename = "XIAOMI_BAND")]
-    pub xiaomi_band: bool,
+    pub xiaomi_band: Option<bool>,
     #[serde(rename = "HEART_RATE_LABEL")]
     pub heart_rate_label: HashMap<String, Vec<String>>,
 }
@@ -47,7 +47,7 @@ impl Default for Config {
             heart_rate_device_name: None,
             heart_rate_device_address: None,
             apple_watch: false,
-            xiaomi_band: false,
+            xiaomi_band: Some(false),
             heart_rate_label,
         }
     }

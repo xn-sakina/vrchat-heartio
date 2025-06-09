@@ -8,7 +8,7 @@ use tokio::time::interval;
 use crate::bluetooth::BluetoothHeartRateMonitor;
 use crate::config::Config;
 use crate::database::Database;
-use crate::gui::{LogEntry, LogLevel, ConnectionStatus, AppStats};
+use crate::gui::{AppStats, ConnectionStatus, LogEntry, LogLevel};
 use crate::osc::OscClient;
 use crate::server::AppleWatchServer;
 use crate::system::SystemUtils;
@@ -68,7 +68,7 @@ impl HeartRateMonitor {
         self.keep_system_awake()?;
 
         // Start monitoring based on configuration
-        if self.config.xiaomi_band {
+        if self.config.xiaomi_band.is_some_and(|enabled| enabled) {
             self.start_xiaomi_band_mode().await?;
         } else if self.config.apple_watch {
             self.start_apple_watch_mode().await?;
@@ -99,8 +99,10 @@ impl HeartRateMonitor {
         match OscClient::new(self.config.osc_host.clone(), self.config.osc_port) {
             Ok(client) => {
                 self.osc_client = Some(client);
-                self.log_info(format!("OSC client initialized for {}:{}", 
-                    self.config.osc_host, self.config.osc_port));
+                self.log_info(format!(
+                    "OSC client initialized for {}:{}",
+                    self.config.osc_host, self.config.osc_port
+                ));
                 Ok(())
             }
             Err(e) => {
@@ -129,7 +131,7 @@ impl HeartRateMonitor {
         self.log_info("Starting Apple Watch server mode...".to_string());
 
         let (heart_rate_sender, mut heart_rate_receiver) = tokio_mpsc::unbounded_channel();
-        
+
         // Start Apple Watch server
         let server = AppleWatchServer::new(heart_rate_sender);
         let mut server_task = tokio::spawn(async move {
@@ -171,14 +173,16 @@ impl HeartRateMonitor {
 
         // Initialize Bluetooth monitor
         let bluetooth_monitor = BluetoothHeartRateMonitor::new().await?;
-        
+
         // Connect to device
         let device_name = self.config.heart_rate_device_name.as_deref();
         let device_address = self.config.heart_rate_device_address.as_deref();
-        
+
         // Use a separate variable to connect, then store it
         let mut connected_monitor = bluetooth_monitor;
-        connected_monitor.connect(device_name, device_address).await?;
+        connected_monitor
+            .connect(device_name, device_address)
+            .await?;
         self.log_info("Connected to Bluetooth heart rate device".to_string());
 
         // Store the bluetooth monitor to prevent it from being dropped
@@ -189,13 +193,16 @@ impl HeartRateMonitor {
 
         // Start monitoring with callback
         let (heart_rate_sender, mut heart_rate_receiver) = tokio_mpsc::unbounded_channel();
-        
+
         // Take the bluetooth monitor out of self to move it into the task
         if let Some(bluetooth_monitor) = self.bluetooth_monitor.take() {
             let mut monitoring_task = tokio::spawn(async move {
-                if let Err(e) = bluetooth_monitor.start_monitoring(move |heart_rate| {
-                    let _ = heart_rate_sender.send(heart_rate);
-                }).await {
+                if let Err(e) = bluetooth_monitor
+                    .start_monitoring(move |heart_rate| {
+                        let _ = heart_rate_sender.send(heart_rate);
+                    })
+                    .await
+                {
                     tracing::error!("Bluetooth monitoring error: {}", e);
                 }
             });
@@ -231,10 +238,10 @@ impl HeartRateMonitor {
         self.log_info("Listening for Xiaomi Smart Band advertisements...".to_string());
 
         let (heart_rate_sender, mut heart_rate_receiver) = tokio_mpsc::unbounded_channel();
-        
+
         // Create Xiaomi Band monitor
         let mut xiaomi_monitor = XiaomiBandMonitor::new(heart_rate_sender).await?;
-        
+
         // Start monitoring in a separate task
         let mut monitoring_task = tokio::spawn(async move {
             if let Err(e) = xiaomi_monitor.start_monitoring().await {
@@ -328,13 +335,13 @@ impl HeartRateMonitor {
     /// Start timeout checker task
     async fn start_timeout_checker(&self) -> tokio::task::JoinHandle<()> {
         let log_sender = self.log_sender.clone();
-        
+
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(5));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 let _ = log_sender.send(LogEntry {
                     timestamp: chrono::Local::now(),
                     level: LogLevel::Debug,
@@ -350,7 +357,8 @@ impl HeartRateMonitor {
             bluetooth_connected: self.bluetooth_monitor.is_some(),
             osc_connected: self.osc_client.is_some(),
             database_connected: self.database.is_some(),
-            apple_watch_server_running: self.config.apple_watch || self.config.xiaomi_band,
+            apple_watch_server_running: self.config.apple_watch
+                || self.config.xiaomi_band.is_some_and(|enabled| enabled),
         }
     }
 

@@ -14,6 +14,7 @@ pub struct XiaomiBandMonitor {
     last_seen: HashMap<String, Instant>,
     heart_rate_sender: mpsc::UnboundedSender<u32>,
     running: bool,
+    device_addr: Option<String>,
 }
 
 impl XiaomiBandMonitor {
@@ -38,6 +39,7 @@ impl XiaomiBandMonitor {
             last_seen: HashMap::new(),
             heart_rate_sender,
             running: false,
+            device_addr: None,
         })
     }
 
@@ -83,11 +85,22 @@ impl XiaomiBandMonitor {
             tokio::select! {
                 event = events.next() => {
                     if let Some(event) = event {
-                        if let btleplug::api::CentralEvent::DeviceDiscovered(id) = event {
-                            if let Ok(peripheral) = self.adapter.peripheral(&id).await {
-                                self.handle_advertisement(&peripheral).await;
+                        if self.device_addr.is_some() {
+                            let addr = self.device_addr.as_ref().unwrap();
+                            if let btleplug::api::CentralEvent::ManufacturerDataAdvertisement { id, manufacturer_data } = &event {
+                                if id.to_string() == *addr {
+                                    // send bpm
+                                    self.send_bpm(&manufacturer_data, id.to_string().as_str()).await;
+                                }
+                            }
+                        } else {
+                            if let btleplug::api::CentralEvent::DeviceUpdated(id) = event {
+                                if let Ok(peripheral) = self.adapter.peripheral(&id).await {
+                                    self.handle_advertisement(&peripheral).await;
+                                }
                             }
                         }
+
                     }
                 }
                 _ = sleep(Duration::from_millis(100)) => {
@@ -124,30 +137,37 @@ impl XiaomiBandMonitor {
                 if name.contains("Xiaomi Smart Band") {
                     // Get manufacturer data
                     let manufacturer_data = properties.manufacturer_data;
-                    for (_, value) in manufacturer_data.iter() {
-                        if value.len() >= 4 {
-                            let heart_rate = value[3] as u32;
-                            if heart_rate > 0 && heart_rate < 300 {
-                                tracing::info!(
-                                    "[{}] Received heart rate: {} bpm",
-                                    addr,
-                                    heart_rate
-                                );
-
-                                // Send heart rate to the channel
-                                if let Err(e) = self.heart_rate_sender.send(heart_rate) {
-                                    tracing::error!("Failed to send heart rate: {}", e);
-                                }
-                            }
-                        } else {
-                            tracing::debug!("[{}] Manufacturer data too short: {:?}", addr, value);
-                        }
-                    }
-                    if manufacturer_data.is_empty() {
-                        tracing::debug!("[{}] No manufacturer data in advertisement", addr);
-                    }
+                    // send heart rate data if available
+                    self.send_bpm(&manufacturer_data, addr.as_str()).await;
                 }
             }
+        }
+    }
+
+    pub async fn send_bpm(&mut self, manufacturer_data: &HashMap<u16, Vec<u8>>, addr: &str) {
+        for (_, value) in manufacturer_data.iter() {
+            if value.len() >= 4 {
+                let heart_rate = value[3] as u32;
+                if heart_rate > 0 && heart_rate < 300 {
+                    // save device address if not already set
+                    if self.device_addr.is_none() {
+                        self.device_addr = Some(addr.to_string());
+                        tracing::info!("Detected Xiaomi Band at address: {}", addr);
+                    }
+
+                    tracing::info!("[{}] Received heart rate: {} bpm", addr, heart_rate);
+
+                    // Send heart rate to the channel
+                    if let Err(e) = self.heart_rate_sender.send(heart_rate) {
+                        tracing::error!("Failed to send heart rate: {}", e);
+                    }
+                }
+            } else {
+                tracing::debug!("[{}] Manufacturer data too short: {:?}", addr, value);
+            }
+        }
+        if manufacturer_data.is_empty() {
+            tracing::debug!("[{}] No manufacturer data in advertisement", addr);
         }
     }
 
