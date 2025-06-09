@@ -29,6 +29,22 @@ The Rust version provides the same functionality as the Node.js CLI in a single 
   }
 ```
 
+#### Xiaomi Band Support
+
+Xiaomi Band versions ≤ 7 support Bluetooth heart rate broadcasting. Versions ≥ 8 are not supported.
+
+Only Xiaomi Band 7 has been tested. Other versions (≤ 7) may work but haven't been tested with actual devices. You can share feedback in issues.
+
+Enable in `heartio.config.json`:
+
+```json
+{
+  "XIAOMI_BAND": true
+}
+```
+
+Note: Xiaomi Band heart rate broadcast has limited frequency (`2-6` seconds per update). Standard heart rate monitors or bands are recommended for better performance.
+
 ## Node.js CLI Version
 
 ### Setup
